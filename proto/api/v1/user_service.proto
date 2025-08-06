@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "google/api/annotations.proto";
+
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/users/{id}"
+    };
+  }
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/users"
+      body : "*"
+    };
+  }
+}
+
+message User {
+  string id = 1;
+  string name = 2;
+}
+
+message GetUserRequest { string id = 1; }
+
+message GetUserResponse { User user = 1; }
+
+message CreateUserRequest { string name = 1; }
+
+message CreateUserResponse { User user = 1; }
