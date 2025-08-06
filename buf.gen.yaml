@@ -1,0 +1,23 @@
+version: v2
+managed:
+  enabled: true
+  disable:
+    - module: buf.build/googleapis/googleapis
+      file_option: go_package_prefix
+    - module: buf.build/gnostic/gnostic
+      file_option: go_package_prefix
+  override:
+    - file_option: go_package_prefix
+      value: github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen
+plugins:
+  - local: app/node_modules/.bin/protoc-gen-es
+    out: app/src/gen
+    opt: target=ts
+
+  - remote: buf.build/protocolbuffers/go
+    out: api/internal/infrastructure/inbound/grpc/gen
+    opt: paths=source_relative
+
+  - remote: buf.build/connectrpc/go
+    out: api/internal/infrastructure/inbound/grpc/gen
+    opt: paths=source_relative
