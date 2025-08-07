@@ -1,0 +1,34 @@
+# Default bridge network between containers
+networks:
+  vulx:
+    name: "vulx"
+
+services:
+  api:
+    container_name: "vulx-api"
+    build:
+      context: api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - vulx
+
+  app:
+    container_name: "vulx-app"
+    build:
+      context: app
+      dockerfile: Dockerfile.dev # for local test use dev file
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app
+      - vulx-app-node-modules:/app/node_modules
+    networks:
+      - vulx
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  vulx-app-node-modules:

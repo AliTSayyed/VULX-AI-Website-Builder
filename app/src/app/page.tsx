@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 const Page = () => {
   return (
     <div>
-      <Button variant="destructive">Click me</Button>
+      <Button variant="default">Click me</Button>
     </div>
   );
 };
