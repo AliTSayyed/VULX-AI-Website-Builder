@@ -13,10 +13,6 @@ function App() {
     setData(userJSON);
   };
 
-  const click = function () {
-    console.log("CLICKED");
-  };
-
   return <Button onClick={() => handleGetUser()}>{data}</Button>;
 }
 

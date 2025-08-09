@@ -13,6 +13,7 @@ plugins: # tells buf where to find the compiler and where to out put results
   - local: app/node_modules/.bin/protoc-gen-es
     out: app/src/gen
     opt: target=ts
+    include_imports: true # imports google annotations
 
   - remote: buf.build/protocolbuffers/go
     out: api/internal/infrastructure/inbound/grpc/gen
