@@ -4,6 +4,26 @@ networks:
     name: "vulx"
 
 services:
+  sql:
+    container_name: "sql"
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: local
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d local -U postgres"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    networks:
+      - vulx
+
   api:
     container_name: "vulx-api"
     build:
@@ -13,6 +33,9 @@ services:
       - "8080:8080"
     networks:
       - vulx
+    depends_on:
+      sql:
+        condition: service_healthy
 
   app:
     container_name: "vulx-app"
@@ -31,4 +54,5 @@ services:
         condition: service_started
 
 volumes:
+  pgdata:
   vulx-app-node-modules:

@@ -3,7 +3,7 @@
 * LoadConfig will create the var that holds the values needed to make the connections
  */
 
-package application
+package config
 
 import "os"
 
@@ -24,8 +24,8 @@ func LoadConfig() Config {
 	cfg := Config{
 		ServerPort: getEnvOrDefault("SERVER_PORT", "8080"),
 		DB: Db{
-			Host:     getEnvOrDefault("DB_HOST", "localhost"),
-			Name:     getEnvOrDefault("DB_NAME", "VULX"),
+			Host:     getEnvOrDefault("DB_HOST", "sql"),
+			Name:     getEnvOrDefault("DB_NAME", "local"),
 			User:     getEnvOrDefault("DB_USER", "postgres"),
 			Password: getEnvOrDefault("DB_PASSWORD", "password"),
 		},

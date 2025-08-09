@@ -7,10 +7,11 @@ import (
 	"os/signal"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
 )
 
 func main() {
-	app := application.New(application.LoadConfig())
+	app := application.New(config.LoadConfig())
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 	err := app.Start(ctx)
 	if err != nil {

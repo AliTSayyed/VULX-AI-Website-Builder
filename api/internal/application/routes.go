@@ -17,11 +17,11 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func loadRoutes(cfg Config) *chi.Mux {
+func loadRoutes(origins []string) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins: cfg.Origins,
+		AllowedOrigins: origins,
 		AllowedMethods: connectcors.AllowedMethods(),
 		AllowedHeaders: connectcors.AllowedHeaders(),
 		ExposedHeaders: connectcors.ExposedHeaders(),
