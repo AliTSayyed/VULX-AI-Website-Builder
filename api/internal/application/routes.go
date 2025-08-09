@@ -17,11 +17,11 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func loadRoutes() *chi.Mux {
+func loadRoutes(cfg Config) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"}, // TODO make this dynamic (config or something)
+		AllowedOrigins: cfg.Origins,
 		AllowedMethods: connectcors.AllowedMethods(),
 		AllowedHeaders: connectcors.AllowedHeaders(),
 		ExposedHeaders: connectcors.ExposedHeaders(),

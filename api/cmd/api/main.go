@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application"
 )
 
 func main() {
-	app := application.New()
-	err := app.Start(context.TODO())
+	app := application.New(application.LoadConfig())
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	err := app.Start(ctx)
 	if err != nil {
-		fmt.Errorf("failed to start app: %w", err)
+		fmt.Printf("failed to start app: %v\n", err)
 	}
 }
