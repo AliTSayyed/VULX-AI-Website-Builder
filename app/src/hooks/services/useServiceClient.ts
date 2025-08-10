@@ -8,23 +8,11 @@ import { createClient, type Client } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import type { GenService } from "@bufbuild/protobuf/codegenv2";
 
-// const getBaseUrl = (): string => {
-//   let url = "";
-//   if (typeof window !== "undefined") {
-//     const hostname = window.location.hostname;
-//     if (hostname === "vulx.ai") {
-//       url = "https://www.vulx.ai";
-//     }
-//     const match = hostname.match(/^([^.]+)\.vulx\.ai$/);
-//     if (match) {
-//       const env = match[1];
-//       url = `https://${env}.api.getbrain.ai`;
-//     }
-//   } else {
-//     url = "http://localhost:8080";
-//   }
-//   return url;
-// };
+const getBaseUrl = (): string => {
+  return "http://localhost:8080";
+};
+
+const binaryFormat = getBaseUrl() === "http://localhost:8080" ? false : true;
 
 export function useServiceClient<T extends GenService<any>>(
   service: T
@@ -32,8 +20,8 @@ export function useServiceClient<T extends GenService<any>>(
   const transport = useMemo(
     () =>
       createConnectTransport({
-        baseUrl: "http://localhost:8080",
-        useBinaryFormat: false,
+        baseUrl: getBaseUrl(),
+        useBinaryFormat: binaryFormat,
       }),
     []
   );

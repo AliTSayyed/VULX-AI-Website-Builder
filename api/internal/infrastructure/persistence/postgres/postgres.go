@@ -19,7 +19,7 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 )
 
-//go:embed migrations/*
+//go:embed migrations/*.sql
 var dbMigrations embed.FS
 
 func NewDb(cfg config.Db) *sqlx.DB {

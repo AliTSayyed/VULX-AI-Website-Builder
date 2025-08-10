@@ -24,7 +24,7 @@ func LoadConfig() Config {
 	cfg := Config{
 		ServerPort: getEnvOrDefault("SERVER_PORT", "8080"),
 		DB: Db{
-			Host:     getEnvOrDefault("DB_HOST", "sql"),
+			Host:     getEnvOrDefault("DB_HOST", "sql"), // sql is name of service in docker compose
 			Name:     getEnvOrDefault("DB_NAME", "local"),
 			User:     getEnvOrDefault("DB_USER", "postgres"),
 			Password: getEnvOrDefault("DB_PASSWORD", "password"),
