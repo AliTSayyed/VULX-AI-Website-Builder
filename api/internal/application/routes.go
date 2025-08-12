@@ -6,6 +6,7 @@
 package application
 
 import (
+	"fmt"
 	"net/http"
 
 	connectcors "connectrpc.com/cors"
@@ -39,7 +40,7 @@ func loadRoutes(origins []string, userServiceHandler *handlers.UserServiceHandle
 
 	transcoder, err := vanguard.NewTranscoder(services)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to mount handlers to router: %w", err))
 	}
 
 	router.Mount("/", transcoder)

@@ -17,11 +17,9 @@ function App() {
 
   return (
     <>
+      <Button onClick={() => handleGetUser()}>Click Me</Button>
       <div>
-        <Button onClick={() => handleGetUser()}>Click Me</Button>
-        <div>
-          <strong>{data}</strong>
-        </div>
+        <strong>{data}</strong>
       </div>
     </>
   );

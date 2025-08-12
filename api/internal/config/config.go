@@ -5,7 +5,10 @@
 
 package config
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 type Config struct {
 	DB      Db
@@ -19,8 +22,8 @@ type Db struct {
 	Password string
 }
 
-func LoadConfig() Config {
-	cfg := Config{
+func LoadConfig() (*Config, error) {
+	cfg := &Config{
 		DB: Db{
 			Host:     getEnvOrDefault("DB_HOST", "sql"), // sql is name of service in docker compose
 			Name:     getEnvOrDefault("DB_NAME", "local"),
@@ -29,7 +32,10 @@ func LoadConfig() Config {
 		},
 		Origins: []string{"http://localhost:5173"},
 	}
-	return cfg
+	if err := cfg.validate(); err != nil {
+		return &Config{}, err
+	}
+	return cfg, nil
 }
 
 func getEnvOrDefault(key, defaultValue string) string {
@@ -41,4 +47,20 @@ func getEnvOrDefault(key, defaultValue string) string {
 		configValue = defaultValue
 	}
 	return configValue
+}
+
+func (c *Config) validate() error {
+	if c.DB.Host == "" {
+		return errors.New("DB_HOST cannot be empty")
+	}
+	if c.DB.Name == "" {
+		return errors.New("DB_NAME cannot be empty")
+	}
+	if c.DB.User == "" {
+		return errors.New("DB_USER cannot be empty")
+	}
+	if c.DB.Password == "" {
+		return errors.New("DB_PASSWORD cannot be empty")
+	}
+	return nil
 }

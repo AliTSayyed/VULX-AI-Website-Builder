@@ -22,7 +22,7 @@ type App struct {
 	router http.Handler
 }
 
-func New(cfg config.Config) *App {
+func New(cfg *config.Config) *App {
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)

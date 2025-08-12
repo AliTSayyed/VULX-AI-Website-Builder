@@ -33,7 +33,7 @@ func NewDb(cfg config.Db) *sqlx.DB {
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to connect to database: %w", err))
 	}
 
 	migrations := migrate.EmbedFileSystemMigrationSource{
@@ -43,7 +43,7 @@ func NewDb(cfg config.Db) *sqlx.DB {
 
 	_, err = migrate.Exec(db, "postgres", migrations, migrate.Up)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to run migrations: %w", err))
 	}
 
 	dbx := sqlx.NewDb(db, "postgres")
