@@ -11,13 +11,13 @@ import (
 	connectcors "connectrpc.com/cors"
 	"connectrpc.com/vanguard"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
-	handlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
-func loadRoutes(origins []string) *chi.Mux {
+func loadRoutes(origins []string, userServiceHandler *handlers.UserServiceHandler) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(cors.Handler(cors.Options{
@@ -34,7 +34,7 @@ func loadRoutes(origins []string) *chi.Mux {
 	})
 
 	services := []*vanguard.Service{
-		vanguard.NewService(apiv1connect.NewUserServiceHandler(&handlers.UserService{})),
+		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler)),
 	}
 
 	transcoder, err := vanguard.NewTranscoder(services)

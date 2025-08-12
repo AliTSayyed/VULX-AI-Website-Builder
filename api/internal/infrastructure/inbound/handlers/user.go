@@ -1,55 +1,65 @@
+/*
+* This file will handle all /user endpoint requests
+* it holds a reference to the userService so it can call on the user service methods
+* verfied data will be converted back to the "proto" defined structure and sent back
+ */
 package handlers
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"connectrpc.com/connect"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
 	apiv1 "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
+	"github.com/google/uuid"
 )
 
-type UserService struct {
+type UserServiceHandler struct {
 	apiv1connect.UnimplementedUserServiceHandler
+
+	userService *services.UserService
 }
 
-func (s *UserService) GetUser(ctx context.Context, req *connect.Request[apiv1.GetUserRequest]) (*connect.Response[apiv1.GetUserResponse], error) {
-	fmt.Printf("GetUser called with request: %+v\n", req.Msg)
-	fmt.Printf("User ID from request: %s\n", req.Msg.Id)
-	// 1. Extract the user ID from the request
-	userID := req.Msg.Id
+func NewUserServiceHandler(userService *services.UserService) *UserServiceHandler {
+	return &UserServiceHandler{
+		userService: userService,
+	}
+}
 
-	// 2. Get the user (from database, API, etc.)
-	// this will be of type of User which we convert into a proto var.
-	user, err := s.getUserFromSomewhere(userID)
+func (s *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[apiv1.GetUserRequest]) (*connect.Response[apiv1.GetUserResponse], error) {
+	id, err := uuid.Parse(req.Msg.GetId())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("user not found: %w", err))
+		return nil, errors.New("could not parse uuid")
+	}
+	user, err := s.userService.Get(ctx, id)
+	if err != nil {
+		return nil, errors.New("could not get user")
 	}
 
-	// 3. Convert to protobuf response
-	response := &apiv1.GetUserResponse{
-		User: &apiv1.User{
-			Id:   user.id,
-			Name: user.name,
-		},
+	return connect.NewResponse(&apiv1.GetUserResponse{
+		User: userToProto(user),
+	}), nil
+}
+
+func (s *UserServiceHandler) CreateUser(ctx context.Context, req *connect.Request[apiv1.CreateUserRequest]) (*connect.Response[apiv1.CreateUserResponse], error) {
+	user, err := s.userService.Add(ctx, req.Msg.GetName())
+	if err != nil {
+		return nil, errors.New("could not create user")
 	}
-
-	// 4. Return the response
-	return connect.NewResponse(response), nil
+	return connect.NewResponse(&apiv1.CreateUserResponse{
+		User: userToProto(user),
+	}), nil
 }
 
-func (s *UserService) CreateUser(context.Context, *connect.Request[apiv1.CreateUserRequest]) (*connect.Response[apiv1.CreateUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, nil)
-}
-
-func (s *UserService) getUserFromSomewhere(id string) (*User, error) {
-	return &User{
-		id:   id,
-		name: "Bob smith",
-	}, nil
-}
-
-type User struct {
-	id   string
-	name string
+func userToProto(user *domain.User) *apiv1.User {
+	if user == nil {
+		return nil
+	}
+	return &apiv1.User{
+		Id:   user.ID().String(),
+		Name: user.Name(),
+	}
 }

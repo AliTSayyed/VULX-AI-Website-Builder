@@ -12,29 +12,32 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
-	"github.com/jmoiron/sqlx"
 )
 
 type App struct {
 	router http.Handler
-	db     *sqlx.DB
-	config config.Config
 }
 
 func New(cfg config.Config) *App {
+	db := postgres.NewDb(cfg.DB)
+	userRepo := postgres.NewUserRepository(db)
+	userService := services.NewUserService(userRepo)
+	userServiceHandler := handlers.NewUserServiceHandler(userService)
+
 	app := &App{
-		router: loadRoutes(cfg.Origins),
-		db:     postgres.NewDb(cfg.DB),
-		config: cfg,
+		router: loadRoutes(cfg.Origins, userServiceHandler),
 	}
+
 	return app
 }
 
 func (a *App) Start(ctx context.Context) error {
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", a.config.ServerPort),
+		Addr:    ":8080",
 		Handler: a.router,
 	}
 
@@ -48,6 +51,7 @@ func (a *App) Start(ctx context.Context) error {
 		close(ch)
 	}()
 
+	// main thread blocks on this statement waiting for channel
 	select {
 	case err := <-ch:
 		return err

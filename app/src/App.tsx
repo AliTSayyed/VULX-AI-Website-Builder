@@ -5,15 +5,26 @@ import { useUserService } from "./hooks/services/useUserService";
 
 function App() {
   const userService = useUserService();
-  const [data, setData] = useState<string>("Click Me");
+  const [data, setData] = useState<string>("");
   const handleGetUser = async () => {
     console.log("CLICKED");
-    const user = await userService.getUser({ id: "123" });
+    const user = await userService.createUser({
+      name: "tony",
+    });
     const userJSON = JSON.stringify(user);
     setData(userJSON);
   };
 
-  return <Button onClick={() => handleGetUser()}>{data}</Button>;
+  return (
+    <>
+      <div>
+        <Button onClick={() => handleGetUser()}>Click Me</Button>
+        <div>
+          <strong>{data}</strong>
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default App;

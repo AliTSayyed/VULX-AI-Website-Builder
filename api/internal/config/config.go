@@ -8,9 +8,8 @@ package config
 import "os"
 
 type Config struct {
-	ServerPort string
-	DB         Db
-	Origins    []string
+	DB      Db
+	Origins []string
 }
 
 type Db struct {
@@ -22,7 +21,6 @@ type Db struct {
 
 func LoadConfig() Config {
 	cfg := Config{
-		ServerPort: getEnvOrDefault("SERVER_PORT", "8080"),
 		DB: Db{
 			Host:     getEnvOrDefault("DB_HOST", "sql"), // sql is name of service in docker compose
 			Name:     getEnvOrDefault("DB_NAME", "local"),
