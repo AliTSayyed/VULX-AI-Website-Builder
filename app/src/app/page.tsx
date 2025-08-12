@@ -1,9 +1,9 @@
+"use client";
 import { useState } from "react";
-import "./Styles/App.css";
-import { Button } from "./components/ui/button";
-import { useUserService } from "./hooks/services/useUserService";
+import { Button } from "@/components/ui/button";
+import { useUserService } from "@/hooks/services/useUserService";
 
-function App() {
+const Page = () => {
   const userService = useUserService();
   const [data, setData] = useState<string>("");
   const handleGetUser = async () => {
@@ -16,13 +16,13 @@ function App() {
   };
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
       <Button onClick={() => handleGetUser()}>Click Me</Button>
       <div>
         <strong>{data}</strong>
       </div>
-    </>
+    </div>
   );
-}
+};
 
-export default App;
+export default Page;
