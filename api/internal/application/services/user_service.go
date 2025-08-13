@@ -5,7 +5,6 @@ package services
 
 import (
 	"context"
-	"errors"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
 	"github.com/google/uuid"
@@ -30,7 +29,7 @@ func NewUserService(userRepo UserRepository) *UserService {
 func (s *UserService) Get(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	user, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, errors.New("user could not be made")
+		return nil, domain.WrapError("user service get", err)
 	}
 	return user, nil
 }
@@ -38,12 +37,12 @@ func (s *UserService) Get(ctx context.Context, id uuid.UUID) (*domain.User, erro
 func (s *UserService) Add(ctx context.Context, name string) (*domain.User, error) {
 	user, err := domain.NewUser(name)
 	if err != nil {
-		return nil, errors.New("user had invalid domain")
+		return nil, domain.WrapError("user service add", err)
 	}
 
 	user, err = s.userRepo.Create(ctx, user)
 	if err != nil {
-		return nil, errors.New("user was unable to be created in database")
+		return nil, domain.WrapError("user service add", err)
 	}
 
 	return user, nil

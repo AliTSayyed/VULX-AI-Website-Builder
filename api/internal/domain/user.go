@@ -14,6 +14,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var ErrUserNameEmpty = NewError(ErrorTypeInvalid, errors.New("user name cannot be empty"))
+
 type User struct {
 	id   uuid.UUID
 	name string
@@ -22,13 +24,20 @@ type User struct {
 func NewUser(name string) (*User, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return nil, errors.New("name can not be blank")
+		return nil, ErrUserNameEmpty
 	}
 
 	return &User{
 		id:   uuid.New(),
 		name: name,
 	}, nil
+}
+
+func RestoreUser(id uuid.UUID, name string) *User {
+	return &User{
+		id:   id,
+		name: name,
+	}
 }
 
 func (u *User) ID() uuid.UUID {

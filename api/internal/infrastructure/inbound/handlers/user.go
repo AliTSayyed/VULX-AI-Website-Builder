@@ -7,11 +7,11 @@ package handlers
 
 import (
 	"context"
-	"errors"
 
 	"connectrpc.com/connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
+	errorAdapter "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/error"
 	apiv1 "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/google/uuid"
@@ -32,11 +32,11 @@ func NewUserServiceHandler(userService *services.UserService) *UserServiceHandle
 func (s *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[apiv1.GetUserRequest]) (*connect.Response[apiv1.GetUserResponse], error) {
 	id, err := uuid.Parse(req.Msg.GetId())
 	if err != nil {
-		return nil, errors.New("could not parse uuid")
+		return nil, errorAdapter.ToConnectError(err)
 	}
 	user, err := s.userService.Get(ctx, id)
 	if err != nil {
-		return nil, errors.New("could not get user")
+		return nil, errorAdapter.ToConnectError(err)
 	}
 
 	return connect.NewResponse(&apiv1.GetUserResponse{
@@ -47,7 +47,7 @@ func (s *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[a
 func (s *UserServiceHandler) CreateUser(ctx context.Context, req *connect.Request[apiv1.CreateUserRequest]) (*connect.Response[apiv1.CreateUserResponse], error) {
 	user, err := s.userService.Add(ctx, req.Msg.GetName())
 	if err != nil {
-		return nil, errors.New("could not create user")
+		return nil, errorAdapter.ToConnectError(err)
 	}
 	return connect.NewResponse(&apiv1.CreateUserResponse{
 		User: userToProto(user),
