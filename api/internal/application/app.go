@@ -8,6 +8,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"connectrpc.com/vanguard"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
+	logger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
@@ -34,7 +36,7 @@ func New(cfg *config.Config) *App {
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
 	// create interceptors (middleware) for connect handlers
-	interceptor := connect.WithInterceptors()
+	interceptor := connect.WithInterceptors(logger.LoggerInterceptor())
 
 	// use vangaurd to create rest and rpc compatible connect handlers
 	services := []*vanguard.Service{
@@ -79,6 +81,7 @@ func (a *App) Start(ctx context.Context) error {
 		}
 		close(ch)
 	}()
+	slog.Info("API Ready For Requests!")
 
 	// main thread blocks on this statement waiting for channel
 	select {
