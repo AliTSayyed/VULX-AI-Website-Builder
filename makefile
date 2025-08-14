@@ -16,7 +16,7 @@ clean:
 
 # Remove everything (good for fresh database / caching issues)
 nuke:
-	@docker composed down -v
+	@docker compose down -v
 	@docker system prune -a
 
 # Generate proto code
