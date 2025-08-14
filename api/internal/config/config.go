@@ -11,8 +11,9 @@ import (
 )
 
 type Config struct {
-	DB      Db
-	Origins []string
+	DB     Db
+	AppUrl string
+	ApiUrl string
 }
 
 type Db struct {
@@ -30,7 +31,8 @@ func LoadConfig() (*Config, error) {
 			User:     getEnvOrDefault("DB_USER", "postgres"),
 			Password: getEnvOrDefault("DB_PASSWORD", "password"),
 		},
-		Origins: []string{"http://localhost:5173", "http://localhost:3000"},
+		ApiUrl: getEnvOrDefault("API_URL", "http://localhost:8080"),
+		AppUrl: getEnvOrDefault("APP_URL", "http://localhost:3000"),
 	}
 	if err := cfg.validate(); err != nil {
 		return &Config{}, err
@@ -61,6 +63,12 @@ func (c *Config) validate() error {
 	}
 	if c.DB.Password == "" {
 		return errors.New("DB_PASSWORD cannot be empty")
+	}
+	if c.ApiUrl == "" {
+		return errors.New("API_URL cannot be empty")
+	}
+	if c.AppUrl == "" {
+		return errors.New("APP_URL cannot be empty")
 	}
 	return nil
 }
