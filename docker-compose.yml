@@ -2,7 +2,7 @@
 networks:
   vulx:
     name: "vulx"
-
+# (dependency chain) SQL → API → Inngest → App (frontend)
 services:
   sql:
     container_name: "sql"
@@ -24,11 +24,28 @@ services:
     networks:
       - vulx
 
+  inngest:
+    container_name: "inngest"
+    image: inngest/inngest:v1.11.5
+    command: "inngest dev -u http://api:8080/api/inngest"
+    environment:
+      - INNGEST_DEV=true
+    ports:
+      - "8288:8288" # Dashboard will be available here
+    networks:
+      - vulx
+    depends_on:
+      api:
+        condition: service_started
+
   api:
     container_name: "vulx-api"
     build:
       context: api
       dockerfile: Dockerfile
+    environment:
+      - INNGEST_DEV=1
+      - INNGEST_BASE_URL=http://inngest:8288
     ports:
       - "8080:8080"
     networks:
@@ -50,7 +67,7 @@ services:
     networks:
       - vulx
     depends_on:
-      api:
+      inngest:
         condition: service_started
 
 volumes:
