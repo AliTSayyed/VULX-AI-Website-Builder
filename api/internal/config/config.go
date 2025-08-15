@@ -11,9 +11,10 @@ import (
 )
 
 type Config struct {
-	DB     Db
-	AppUrl string
-	ApiUrl string
+	DB            Db
+	AppUrl        string
+	ApiUrl        string
+	InngestClient InngestClient
 }
 
 type Db struct {
@@ -21,6 +22,10 @@ type Db struct {
 	Name     string
 	User     string
 	Password string
+}
+
+type InngestClient struct {
+	AppID string
 }
 
 func LoadConfig() (*Config, error) {
@@ -33,6 +38,9 @@ func LoadConfig() (*Config, error) {
 		},
 		ApiUrl: getEnvOrDefault("API_URL", "http://localhost:8080"),
 		AppUrl: getEnvOrDefault("APP_URL", "http://localhost:3000"),
+		InngestClient: InngestClient{
+			AppID: getEnvOrDefault("INNGEST_APP_ID", "vulx-api"),
+		},
 	}
 	if err := cfg.validate(); err != nil {
 		return &Config{}, err
@@ -69,6 +77,9 @@ func (c *Config) validate() error {
 	}
 	if c.AppUrl == "" {
 		return errors.New("APP_URL cannot be empty")
+	}
+	if c.InngestClient.AppID == "" {
+		return errors.New("INNGEST_APP_ID cannot be empty")
 	}
 	return nil
 }

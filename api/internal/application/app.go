@@ -8,11 +8,10 @@ package application
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
-	"connectrpc.com/connect"
+	connectrpc "connectrpc.com/connect"
 	"connectrpc.com/vanguard"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
@@ -20,47 +19,51 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/inngest"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
+	utils "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/util"
 )
 
 type App struct {
 	mux      *http.ServeMux
 	security *security.SecurityAdapter
+	inngest  *inngest.InngestAdapter
 }
 
 func New(cfg *config.Config) *App {
-	// ddd dependency injection
+	utils.InitilizeLogger()
+
+	// dependency injection
+	inngestAdapter := inngest.NewInngestAdapter(cfg.InngestClient)
+
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
-	// create interceptors (middleware) for connect handlers
-	interceptor := connect.WithInterceptors(logger.LoggerInterceptor())
-
-	// use vangaurd to create rest and rpc compatible connect handlers
+	// use vangaurd to create rest and rpc compatible connect handlers with middleware (interceptors)
+	interceptor := connectrpc.WithInterceptors(logger.LoggerInterceptor())
 	services := []*vanguard.Service{
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
 	}
 
-	transcoder, err := vanguard.NewTranscoder(services)
+	connectHandlers, err := vanguard.NewTranscoder(services)
 	if err != nil {
 		panic(fmt.Errorf("failed to mount transcode handlers: %w", err))
 	}
 
-	// create routes
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status": "healthy"}`))
 	}))
-	mux.Handle("/", transcoder)
+	mux.Handle("/", connectHandlers)
 
-	// store routes and cors config in the app
 	app := &App{
 		mux:      mux,
 		security: security.NewSecurityAdapter(cfg),
+		inngest:  inngestAdapter,
 	}
 
 	return app
@@ -74,6 +77,7 @@ func (a *App) Start(ctx context.Context) error {
 
 	ch := make(chan error, 1)
 
+	// start sever on new thread
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
@@ -81,9 +85,12 @@ func (a *App) Start(ctx context.Context) error {
 		}
 		close(ch)
 	}()
-	slog.Info("API Ready For Requests!")
+	utils.Logger.Info("API ready for requests")
 
-	// main thread blocks on this statement waiting for channel
+	// create connection to inngest on new thread
+	go inngest.InitilizeIngest(ctx, a.inngest.Client)
+
+	// main thread blocks on this statement waiting for err on server or ctx done call.
 	select {
 	case err := <-ch:
 		return err

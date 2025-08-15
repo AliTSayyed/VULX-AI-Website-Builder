@@ -15,8 +15,8 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("invalid config %w", err))
 	}
-	app := application.New(config)
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	app := application.New(config)
 	err = app.Start(ctx)
 	if err != nil {
 		fmt.Printf("failed to start app: %v\n", err)
