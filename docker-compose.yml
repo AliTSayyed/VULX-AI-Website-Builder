@@ -27,9 +27,7 @@ services:
   inngest:
     container_name: "inngest"
     image: inngest/inngest:v1.11.5
-    command: "inngest dev"
-    environment:
-      - INNGEST_DEV=true
+    command: "inngest dev -u http://api:8080/api/inngest"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8288"]
       interval: 1s
@@ -37,7 +35,6 @@ services:
       retries: 10
     ports:
       - "8288:8288" # Dashboard will be available here
-      - "8289:8289" # Connect gateway for WebSocket connections
     networks:
       - vulx
   api:
@@ -47,7 +44,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - INNGEST_DEV=1
-      - INNGEST_DEV_SERVER_URL=http://inngest:8288
+      - INNGEST_BASE_URL=http://inngest:8288
     ports:
       - "8080:8080"
     networks:

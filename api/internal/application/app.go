@@ -52,20 +52,17 @@ func New(cfg *config.Config) *App {
 		panic(fmt.Errorf("failed to mount transcode handlers: %w", err))
 	}
 
+	// routing
 	mux := http.NewServeMux()
-	mux.Handle("/healthz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "healthy"}`))
-	}))
+	mux.Handle("/healthz", healthz())
 	mux.Handle("/", connectHandlers)
+	mux.Handle("/api/inngest", inngestAdapter.Client.Serve())
 
 	app := &App{
 		mux:      mux,
 		security: security.NewSecurityAdapter(cfg),
 		inngest:  inngestAdapter,
 	}
-
 	return app
 }
 
@@ -87,8 +84,8 @@ func (a *App) Start(ctx context.Context) error {
 	}()
 	utils.Logger.Info("API ready for requests")
 
-	// create connection to inngest on new thread
-	go inngest.InitilizeIngest(ctx, a.inngest.Client)
+	// call hook up inngest functions
+	inngest.TestInngestFunc(ctx, a.inngest.Client)
 
 	// main thread blocks on this statement waiting for err on server or ctx done call.
 	select {
