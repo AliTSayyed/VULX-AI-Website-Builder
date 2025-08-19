@@ -39,7 +39,7 @@ func LoadConfig() (*Config, error) {
 		ApiUrl: getEnvOrDefault("API_URL", "http://localhost:8080"),
 		AppUrl: getEnvOrDefault("APP_URL", "http://localhost:3000"),
 		InngestClient: InngestClient{
-			AppID: getEnvOrDefault("INNGEST_APP_ID", "vulx-api"),
+			AppID: getEnvOrDefault("INNGEST_APP_ID", "vulx-app"),
 		},
 	}
 	if err := cfg.validate(); err != nil {

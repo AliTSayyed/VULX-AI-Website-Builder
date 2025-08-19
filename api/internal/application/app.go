@@ -19,7 +19,6 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
-	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/inngest"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
 	utils "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/util"
 )
@@ -27,14 +26,10 @@ import (
 type App struct {
 	mux      *http.ServeMux
 	security *security.SecurityAdapter
-	inngest  *inngest.InngestAdapter
 }
 
 func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
-
-	// dependency injection
-	inngestAdapter := inngest.NewInngestAdapter(cfg.InngestClient)
 
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
@@ -52,20 +47,16 @@ func New(cfg *config.Config) *App {
 		panic(fmt.Errorf("failed to mount transcode handlers: %w", err))
 	}
 
+	// routing
 	mux := http.NewServeMux()
-	mux.Handle("/healthz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "healthy"}`))
-	}))
+	mux.Handle("/healthz", healthz())
 	mux.Handle("/", connectHandlers)
+	// mux.Handle("/api/inngest", inngestAdapter.Client.Serve())
 
 	app := &App{
 		mux:      mux,
 		security: security.NewSecurityAdapter(cfg),
-		inngest:  inngestAdapter,
 	}
-
 	return app
 }
 
@@ -86,9 +77,6 @@ func (a *App) Start(ctx context.Context) error {
 		close(ch)
 	}()
 	utils.Logger.Info("API ready for requests")
-
-	// create connection to inngest on new thread
-	go inngest.InitilizeIngest(ctx, a.inngest.Client)
 
 	// main thread blocks on this statement waiting for err on server or ctx done call.
 	select {
