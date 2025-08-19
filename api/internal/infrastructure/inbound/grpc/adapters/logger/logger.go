@@ -7,10 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 )
 
 // TODO pass in env config (local, dev, prod) and add slog.warn based on env
@@ -34,7 +34,7 @@ func LoggerInterceptor() connect.UnaryInterceptorFunc {
 					code = connect.CodeUnknown
 				}
 
-				slog.Error(
+				utils.Logger.Error(
 					"req failed",
 					"procedure", req.Spec().Procedure,
 					"req", fmt.Sprintf("%+v", req.Any()),
@@ -45,7 +45,7 @@ func LoggerInterceptor() connect.UnaryInterceptorFunc {
 				return nil, err
 			}
 
-			slog.Info(
+			utils.Logger.Info(
 				"req succeeded",
 				"procedure", req.Spec().Procedure,
 				"req", fmt.Sprintf("%+v", req.Any()),
