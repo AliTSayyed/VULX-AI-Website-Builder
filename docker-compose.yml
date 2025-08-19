@@ -2,7 +2,6 @@
 networks:
   vulx:
     name: "vulx"
-
 services:
   sql:
     container_name: "sql"
@@ -23,7 +22,49 @@ services:
       - "5432:5432"
     networks:
       - vulx
-
+  temporal:
+    container_name: "temporal"
+    image: temporalio/auto-setup:1.28.1.0
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=password
+      - POSTGRES_SEEDS=sql # finds sql service
+      - DBNAME=temporal
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    networks:
+      - vulx
+    ports:
+      - "7233:7233"
+    depends_on:
+      sql:
+        condition: service_healthy
+  temporal-admin-tools:
+    container_name: "temporal-admin-tools"
+    image: temporalio/admin-tools:1.28.1-tctl-1.18.4-cli-1.4.1
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    depends_on:
+      - temporal
+    networks:
+      - vulx
+    stdin_open: true
+    tty: true
+  temporal-ui:
+    container_name: "temporal-ui"
+    image: temporalio/ui:2.39.0
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    networks:
+      - vulx
+    ports:
+      - "8081:8080"
+    depends_on:
+      - temporal
   api:
     container_name: "vulx-api"
     build:
@@ -36,12 +77,18 @@ services:
     depends_on:
       sql:
         condition: service_healthy
+      temporal:
+        condition: service_started
+      temporal-admin-tools:
+        condition: service_started
+      temporal-ui:
+        condition: service_started
 
   app:
     container_name: "vulx-app"
     build:
       context: app
-      dockerfile: Dockerfile.dev # for local test use dev file
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     volumes:
@@ -52,7 +99,6 @@ services:
     depends_on:
       api:
         condition: service_started
-
 volumes:
   pgdata:
   vulx-app-node-modules:
