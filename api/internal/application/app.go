@@ -36,10 +36,12 @@ func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
 	// ddd dependency injection
-	temporal := temporal.New(cfg.Temporal)
+	temporalClient := temporal.New(cfg.Temporal)
+	userWorkflow := temporal.NewUserWorkflow(temporalClient)
+
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
-	userService := services.NewUserService(userRepo)
+	userService := services.NewUserService(userRepo, userWorkflow)
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
 	// create interceptors (middleware) for connect handlers
@@ -65,7 +67,7 @@ func New(cfg *config.Config) *App {
 		mux:      mux,
 		security: security.NewSecurityAdapter(cfg),
 		db:       db,
-		temporal: temporal,
+		temporal: temporalClient,
 	}
 
 	return app
