@@ -14,7 +14,8 @@ import (
 )
 
 func init() {
-	err := godotenv.Load("../../.env")
+	// .env will be at root level of dockerfile
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Println("No .env file found")
 	}

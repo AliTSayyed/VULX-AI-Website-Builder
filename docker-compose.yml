@@ -34,6 +34,12 @@ services:
       - DBNAME=temporal
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CLI_ADDRESS=temporal:7233
+    healthcheck:
+      test: ["CMD", "tctl", "--ns", "default", "namespace", "describe"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - vulx
     ports:
@@ -78,7 +84,7 @@ services:
       sql:
         condition: service_healthy
       temporal:
-        condition: service_started
+        condition: service_healthy
       temporal-admin-tools:
         condition: service_started
       temporal-ui:

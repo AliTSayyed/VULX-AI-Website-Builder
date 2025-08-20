@@ -36,8 +36,9 @@ func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
 	// ddd dependency injection
-	temporalClient := temporal.New(cfg.Temporal)
-	userWorkflow := temporal.NewUserWorkflow(temporalClient)
+	temporalService := temporal.New(cfg.Temporal)
+	temporalService.RegisterWorkers()
+	userWorkflow := temporal.NewUserWorkflow(temporalService)
 
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
@@ -67,7 +68,7 @@ func New(cfg *config.Config) *App {
 		mux:      mux,
 		security: security.NewSecurityAdapter(cfg),
 		db:       db,
-		temporal: temporalClient,
+		temporal: temporalService,
 	}
 
 	return app
@@ -97,6 +98,7 @@ func (a *App) Start(ctx context.Context) error {
 	case <-ctx.Done():
 		timeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		// close connection to services
+		defer a.temporal.StopWorkers()
 		defer a.temporal.Client.Close()
 		defer a.db.Close()
 		defer cancel()
