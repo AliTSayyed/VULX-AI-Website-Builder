@@ -34,7 +34,7 @@ services:
       - DBNAME=temporal
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CLI_ADDRESS=temporal:7233
-    healthcheck:
+    healthcheck: # must health check to wait for namespace creation (will cause race conditon on api otherwise)
       test: ["CMD", "tctl", "--ns", "default", "namespace", "describe"]
       interval: 1s
       timeout: 5s

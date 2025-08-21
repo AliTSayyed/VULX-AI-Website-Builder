@@ -24,7 +24,6 @@ type UserWorkflowDetails struct {
 	Greeting string
 }
 
-// TODO create workers, register workflows and activities to workers.
 // This will queue a workflow
 func (u *UserWorkflow) StartUserWorkflow(ctx context.Context) error {
 	options := client.StartWorkflowOptions{
