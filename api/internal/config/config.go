@@ -7,13 +7,25 @@ package config
 
 import (
 	"errors"
+	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
+func init() {
+	// .env will be at root level of dockerfile
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Println("No .env file found")
+	}
+}
+
 type Config struct {
-	DB     Db
-	AppUrl string
-	ApiUrl string
+	DB       Db
+	AppUrl   string
+	ApiUrl   string
+	Temporal Temporal
 }
 
 type Db struct {
@@ -21,6 +33,10 @@ type Db struct {
 	Name     string
 	User     string
 	Password string
+}
+
+type Temporal struct {
+	HostPort string
 }
 
 func LoadConfig() (*Config, error) {
@@ -33,6 +49,9 @@ func LoadConfig() (*Config, error) {
 		},
 		ApiUrl: getEnvOrDefault("API_URL", "http://localhost:8080"),
 		AppUrl: getEnvOrDefault("APP_URL", "http://localhost:3000"),
+		Temporal: Temporal{
+			HostPort: getEnvOrDefault("TEMPORAL_ADDRESS", "temporal:7233"),
+		},
 	}
 	if err := cfg.validate(); err != nil {
 		return &Config{}, err
@@ -69,6 +88,9 @@ func (c *Config) validate() error {
 	}
 	if c.AppUrl == "" {
 		return errors.New("APP_URL cannot be empty")
+	}
+	if c.Temporal.HostPort == "" {
+		return errors.New("TEMPORAL_ADDRESS cannot be empty")
 	}
 	return nil
 }

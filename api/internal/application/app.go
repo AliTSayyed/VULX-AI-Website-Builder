@@ -19,22 +19,30 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
+	"github.com/jmoiron/sqlx"
 )
 
 type App struct {
 	mux      *http.ServeMux
 	security *security.SecurityAdapter
+	db       *sqlx.DB
+	temporal *temporal.Temporal
 }
 
 func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
 	// ddd dependency injection
+	temporalService := temporal.New(cfg.Temporal)
+	temporalService.RegisterWorkers()
+	userWorkflow := temporal.NewUserWorkflow(temporalService)
+
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
-	userService := services.NewUserService(userRepo)
+	userService := services.NewUserService(userRepo, userWorkflow)
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
 	// create interceptors (middleware) for connect handlers
@@ -55,10 +63,12 @@ func New(cfg *config.Config) *App {
 	mux.Handle("/healthz", healthz())
 	mux.Handle("/", transcoder)
 
-	// store routes and cors config in the app
+	// app stores routes, cors (security), and connections to services
 	app := &App{
 		mux:      mux,
 		security: security.NewSecurityAdapter(cfg),
+		db:       db,
+		temporal: temporalService,
 	}
 
 	return app
@@ -87,6 +97,10 @@ func (a *App) Start(ctx context.Context) error {
 		return err
 	case <-ctx.Done():
 		timeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		// close connection to services
+		defer a.temporal.StopWorkers()
+		defer a.temporal.Client.Close()
+		defer a.db.Close()
 		defer cancel()
 		return server.Shutdown(timeout)
 	}

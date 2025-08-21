@@ -16,13 +16,19 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 }
 
-type UserService struct {
-	userRepo UserRepository
+type UserWorkflowService interface {
+	StartUserWorkflow(ctx context.Context) error
 }
 
-func NewUserService(userRepo UserRepository) *UserService {
+type UserService struct {
+	userRepo     UserRepository
+	userWorkflow UserWorkflowService
+}
+
+func NewUserService(userRepo UserRepository, userWorkflow UserWorkflowService) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		userRepo:     userRepo,
+		userWorkflow: userWorkflow,
 	}
 }
 
@@ -41,6 +47,12 @@ func (s *UserService) Add(ctx context.Context, name string) (*domain.User, error
 	}
 
 	user, err = s.userRepo.Create(ctx, user)
+	if err != nil {
+		return nil, domain.WrapError("user service add", err)
+	}
+
+	// example call to workflow orchestration
+	err = s.userWorkflow.StartUserWorkflow(ctx)
 	if err != nil {
 		return nil, domain.WrapError("user service add", err)
 	}
