@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	migrate "github.com/rubenv/sql-migrate"
@@ -47,5 +48,6 @@ func NewDb(cfg config.Db) *sqlx.DB {
 	}
 
 	dbx := sqlx.NewDb(db, "postgres")
+	utils.Logger.Info("Database connection and migrations successful")
 	return dbx
 }

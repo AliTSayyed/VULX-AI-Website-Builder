@@ -5,22 +5,26 @@ import (
 	"fmt"
 	"time"
 
+	llm "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/LLM"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
+	"github.com/tmc/langchaingo/llms"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
 type UserWorkflow struct {
 	client client.Client
+	llm    *llm.LLM
 }
 
-func NewUserWorkflow(temporal *Temporal) *UserWorkflow {
+func NewUserWorkflow(temporal *Temporal, llm *llm.LLM) *UserWorkflow {
 	return &UserWorkflow{
 		client: temporal.Client,
+		llm:    llm,
 	}
 }
 
-type UserWorkflowDetails struct {
+type UserWorkflowData struct {
 	Greeting string
 }
 
@@ -29,13 +33,13 @@ func (u *UserWorkflow) StartUserWorkflow(ctx context.Context) error {
 	options := client.StartWorkflowOptions{
 		TaskQueue: "user-workflow",
 	}
-	input := UserWorkflowDetails{
+	input := UserWorkflowData{
 		Greeting: "Hello there user from temporal worfklow execution",
 	}
 	workflowRun, err := u.client.ExecuteWorkflow(
 		context.Background(),
 		options,
-		UserWorkFlow,
+		"UserWorkflowSteps",
 		input,
 	)
 	utils.Logger.Info("Starting user workflow by placing it in queue")
@@ -47,22 +51,42 @@ func (u *UserWorkflow) StartUserWorkflow(ctx context.Context) error {
 }
 
 // Activities need context.Context, not workflow.Context
-func SayHello(ctx context.Context, data UserWorkflowDetails) error {
+func (u *UserWorkflow) SayHello(ctx context.Context, data UserWorkflowData) error {
 	time.Sleep(5 * time.Second)
 	fmt.Println(data.Greeting)
 	return nil
 }
 
+func (u *UserWorkflow) UseLlm(ctx context.Context, data UserWorkflowData) error {
+	prompt := "Write a simple react button component function"
+
+	response, err := u.llm.OpenaiClient.GenerateContent(ctx, []llms.MessageContent{
+		llms.TextParts(llms.ChatMessageTypeHuman, prompt),
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("LLM Response:", response.Choices[0].Content)
+	return nil
+}
+
 // Workflows need to return error and properly handle activity execution
-func UserWorkFlow(ctx workflow.Context, input UserWorkflowDetails) error {
+func (u *UserWorkflow) UserWorkflowSteps(ctx workflow.Context, input UserWorkflowData) error {
 	// Need activity options and proper error handling
 	activityOptions := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
 	}
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
-	err := workflow.ExecuteActivity(ctx, SayHello, input).Get(ctx, nil)
-	utils.Logger.Info("Running workflow steps inside user workflow")
+	err := workflow.ExecuteActivity(ctx, "SayHello", input).Get(ctx, nil)
+	utils.Logger.Info("Running workflow step 1 inside user workflow")
+	if err != nil {
+		return err
+	}
+
+	err = workflow.ExecuteActivity(ctx, "UseLtlm", input).Get(ctx, nil)
+	utils.Logger.Info("Running workflow step 2 inside user workflow")
 	if err != nil {
 		return err
 	}
