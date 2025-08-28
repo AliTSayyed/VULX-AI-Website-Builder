@@ -34,10 +34,13 @@ func New(cfg config.Temporal) *Temporal {
 	}
 }
 
-func (temporal *Temporal) RegisterWorkers() *Temporal {
+func (temporal *Temporal) RegisterWorkers(userWorkflowInstance *UserWorkflow) *Temporal {
 	userWorker := worker.New(temporal.Client, "user-workflow", worker.Options{})
-	userWorker.RegisterWorkflow(UserWorkFlow)
-	userWorker.RegisterActivity(SayHello)
+	userWorker.RegisterWorkflow(userWorkflowInstance.UserWorkflowSteps)
+	userWorker.RegisterActivity(userWorkflowInstance.SayHello)
+	userWorker.RegisterActivity(userWorkflowInstance.UseLlm)
+
+	utils.Logger.Info("Workers successfully registered")
 
 	go func() {
 		err := userWorker.Run(worker.InterruptCh())

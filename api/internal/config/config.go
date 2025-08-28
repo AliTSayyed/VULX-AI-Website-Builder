@@ -7,25 +7,15 @@ package config
 
 import (
 	"errors"
-	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
-
-func init() {
-	// .env will be at root level of dockerfile
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println("No .env file found")
-	}
-}
 
 type Config struct {
 	DB       Db
 	AppUrl   string
 	ApiUrl   string
 	Temporal Temporal
+	LLM      LLM
 }
 
 type Db struct {
@@ -39,10 +29,14 @@ type Temporal struct {
 	HostPort string
 }
 
+type LLM struct {
+	OpenaiApiKey string
+}
+
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		DB: Db{
-			Host:     getEnvOrDefault("DB_HOST", "sql"), // sql is name of service in docker compose
+			Host:     getEnvOrDefault("DB_HOST", "sql"),
 			Name:     getEnvOrDefault("DB_NAME", "local"),
 			User:     getEnvOrDefault("DB_USER", "postgres"),
 			Password: getEnvOrDefault("DB_PASSWORD", "password"),
@@ -51,6 +45,9 @@ func LoadConfig() (*Config, error) {
 		AppUrl: getEnvOrDefault("APP_URL", "http://localhost:3000"),
 		Temporal: Temporal{
 			HostPort: getEnvOrDefault("TEMPORAL_ADDRESS", "temporal:7233"),
+		},
+		LLM: LLM{
+			OpenaiApiKey: getEnvOrDefault("OPENAI_API_KEY", ""),
 		},
 	}
 	if err := cfg.validate(); err != nil {
@@ -91,6 +88,9 @@ func (c *Config) validate() error {
 	}
 	if c.Temporal.HostPort == "" {
 		return errors.New("TEMPORAL_ADDRESS cannot be empty")
+	}
+	if c.LLM.OpenaiApiKey == "" {
+		return errors.New("OPENAI_API_KEY cannot be empty")
 	}
 	return nil
 }
