@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
 	llm "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/LLM"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"github.com/tmc/langchaingo/llms"
@@ -64,7 +65,7 @@ func (u *UserWorkflow) UseLlm(ctx context.Context, data UserWorkflowData) error 
 		llms.TextParts(llms.ChatMessageTypeHuman, prompt),
 	})
 	if err != nil {
-		return err
+		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed at UseLlm, %w", err))
 	}
 
 	fmt.Println("LLM Response:", response.Choices[0].Content)
@@ -82,13 +83,13 @@ func (u *UserWorkflow) UserWorkflowSteps(ctx workflow.Context, input UserWorkflo
 	err := workflow.ExecuteActivity(ctx, "SayHello", input).Get(ctx, nil)
 	utils.Logger.Info("Running workflow step 1 inside user workflow")
 	if err != nil {
-		return err
+		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed at UserWorkflowSteps, %w", err))
 	}
 
-	err = workflow.ExecuteActivity(ctx, "UseLtlm", input).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, "UseLlm", input).Get(ctx, nil)
 	utils.Logger.Info("Running workflow step 2 inside user workflow")
 	if err != nil {
-		return err
+		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed at UserWorkflowSteps, %w", err))
 	}
 	return nil
 }
