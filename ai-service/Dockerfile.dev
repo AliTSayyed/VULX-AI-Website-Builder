@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 9999 
+
+# add "--proxy-headers" for TLS / load balancers 
+# in prod CMD ["fastapi", "run", "ai_service/main.py", "--port", "9999"]
+
+CMD ["uvicorn", "main:ai_service", "--host", "0.0.0.0", "--port", "9999"]

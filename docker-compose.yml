@@ -71,6 +71,17 @@ services:
       - "8081:8080"
     depends_on:
       - temporal
+  ai-service:
+    container_name: "vulx-ai-service"
+    build:
+      context: ai-service
+      dockerfile: Dockerfile.dev # need to change this when in prod
+    env_file:
+      - ai-service/.env
+    ports:
+      - "9999:9999"
+    networks:
+      - vulx
   api:
     container_name: "vulx-api"
     build:
@@ -87,16 +98,13 @@ services:
         condition: service_healthy
       temporal:
         condition: service_healthy
-      temporal-admin-tools:
+      ai-service:
         condition: service_started
-      temporal-ui:
-        condition: service_started
-
   app:
     container_name: "vulx-app"
     build:
       context: app
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.dev # need to change this when in prod
     ports:
       - "3000:3000"
     volumes:

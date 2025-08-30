@@ -1,6 +1,7 @@
-# next
-node_modules
-.next
+# python 
+venv/
+__pycache__/
+*.pyc
 
 # Git
 .git/
