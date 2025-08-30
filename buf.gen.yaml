@@ -22,3 +22,12 @@ plugins: # tells buf where to find the compiler and where to out put results
   - remote: buf.build/connectrpc/go
     out: api/internal/infrastructure/inbound/grpc/gen
     opt: paths=source_relative
+
+  # https://github.com/google/gnostic/tree/main/cmd/protoc-gen-openapi
+  - remote: buf.build/community/google-gnostic-openapi:v0.7.0
+    out: api/internal/infrastructure/inbound/http/handlers
+    opt:
+      - version=1.0.0
+      - title=api
+      - description=VULX
+      - enum_type=string
