@@ -19,6 +19,7 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
+	httpHandlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/http/handlers"
 	llm "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/LLM"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
@@ -65,6 +66,7 @@ func New(cfg *config.Config) *App {
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", healthz())
 	mux.Handle("/", transcoder)
+	mux.Handle("/docs/", http.StripPrefix("/docs", httpHandlers.NewHandler()))
 
 	// app stores routes, cors (security), and connections to services
 	app := &App{
