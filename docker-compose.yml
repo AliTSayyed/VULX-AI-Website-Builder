@@ -93,11 +93,15 @@ services:
       - "8080:8080"
     networks:
       - vulx
-    depends_on:
+    depends_on: # this dependency forces services to start with make file
       sql:
         condition: service_healthy
       temporal:
         condition: service_healthy
+      temporal-admin-tools:
+        condition: service_started
+      temporal-ui:
+        condition: service_started
       ai-service:
         condition: service_started
   app:
