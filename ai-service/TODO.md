@@ -1,6 +1,7 @@
 some folder structure like so
 ai_service/
 ├── main.py
+|-- config.py
 ├── utils/
 │ ├── **init**.py
 │ ├── logging.py
@@ -23,8 +24,5 @@ ai_service/
 │ ├── **init**.py
 │ ├── agent_service.py
 │ └── sandbox_service.py
-└── config/
-├── **init**.py
-└── settings.py
 
 Treat FastAPI service as a "package" or library that Go API consumes via HTTP calls.
