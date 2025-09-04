@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # API Keys
     e2b_api_key: Optional[str] = None
+    e2b_sandbox_template_1: str
 
     class Config:
         env_file = ".env"   

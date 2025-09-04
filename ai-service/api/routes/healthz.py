@@ -1,5 +1,7 @@
-from main import ai_service
+from fastapi import APIRouter
 
-@ai_service.get('/healthz')
+router = APIRouter()
+
+@router.get('/healthz')
 def healthz():
     return {"status":"ok"}
