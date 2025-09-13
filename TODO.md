@@ -1,49 +1,61 @@
-# TODO
+# GOLANG BACKEND STREAMING FLOW (SIMPLIFIED)
 
-1. Code Generation & Storage
-   AI generates code (in my application)
-   Store that code in the database or storage?
-   Code is associated with the chat/session
-   AI should be aware of what the code files and content are
+1. INITIAL REQUEST
+   Frontend → Golang Handler (POST /api/messages)
+   ├─ Handler starts Temporal Workflow
+   ├─ Handler returns workflowID to Frontend
+   └─ Frontend immediately calls SSE endpoint with workflowID
 
-2. Code Execution
-   Send the AI-generated code to the E2B sandbox (using the sandbox ID)
-   Using a python service to handle everything AI
-   E2B executes the code in the isolated environment
-   E2B returns the results/output
-   The same chat should have the same sandbox ID but the AI needs to show the right 'project' that the user asks.
-   A user may have multiple 'projects' created in the same chat and the AI should be able to update the correct files when asked.
-   Chache sandbox ids so we dont look them up on every chat message.
+2. STREAMING CONNECTION
+   Frontend → SSE Endpoint (GET /api/stream?workflow_id=xxx)
+   ├─ SSE connection established
+   └─ Waiting for chunks from Python via Golang
 
-- E2B Provides
-  Execution environment (not code generation)
-  Results/output of the executed code
-  URLs for web applications (if the code creates a web server/app)
-  File system access (for file operations, data persistence within the sandbox)
+3. TEMPORAL WORKFLOW STEPS
 
-3. Display to User
-   Code: Show code from my own database
-   Output/Results: Show this from E2B's response
-   E2B can provide a URL to the running application
+   Step 1: Create Sandbox
+   ├─ Workflow → Activity: CreateSandbox()
+   ├─ Activity → E2B: Create NextJS sandbox
+   ├─ E2B → Activity: Return sandboxID, URL
+   └─ Activity → Workflow: Sandbox ready
 
-4. I Handle
-   Code storage in the database
-   Session management (mapping chats to sandbox IDs)
-   UI for displaying both code and results
-   Code versioning/history if needed
-   Temporal Workflows for managing long conversations
-   Langchain to control the output of AI and what models are available.
-   Need to determine correct context for the AI on every call, may need intermediate AI calls to determine the best context for the actually code AI call.
+   Step 2: Call AI Agent (WITH DIRECT STREAMING)
+   ├─ Workflow → Activity: CallAIAgent(sandboxID, userMessage, workflowID)
+   ├─ Activity → Python Service: POST /ai/agent (includes workflowID)
+   │
+   └─ STREAMING LOOP (BYPASSES TEMPORAL):
+   ├─ Python Service runs LangChain agent
+   ├─ Agent executes tools on E2B (write files, commands)
+   ├─ For each chunk: Python → Golang REST: POST /api/stream/{workflowID}/chunk
+   ├─ Golang → SSE Manager: Forward chunk directly
+   ├─ SSE → Frontend: Stream chunk immediately
+   └─ Repeat until agent complete
+   │
+   ├─ Python Service → Activity: Return final response
+   └─ Activity → Workflow: AI processing complete
 
-5. Consider this case:
-   User types: "Build me a React todo app"
-   ↓
-   Chat Handler receives message
-   ↓  
-   Chat Service thinks: "This needs code execution, do we have a sandbox?"
-   ↓
-   If no sandbox → Create one automatically
-   ↓
-   Execute/generate code in sandbox
-   ↓
-   Return chat response with sandbox URL
+   Step 3: Save Results
+   ├─ Workflow → Activity: SaveMessage(response, sandboxID)
+   ├─ Activity → Database: Save complete response
+   └─ Activity → Workflow: Saved
+
+4. CLEANUP
+   ├─ Workflow completes
+   ├─ SSE connection closes
+   └─ Frontend shows final result
+
+KEY COMPONENTS:
+
+- RPC Endpoint: Starts workflow, returns workflowID
+- Chunk Endpoint: Receives chunks from Python, forwards directly to SSE
+- SSE Endpoint: Streams real-time updates to frontend
+- Temporal Client: Orchestrates main workflow (not streaming)
+- Activities: CreateSandbox, CallAIAgent, SaveMessage
+
+DIRECT STREAMING FLOW:
+Python AI Service → Golang REST API → SSE Manager → Frontend
+(Temporal handles orchestration, not streaming)
+
+Frontend ←→ Golang (Connect RPC) ✓
+Golang ←→ Python (REST) ✓
+Python → Golang (HTTP chunks for streaming) ✓

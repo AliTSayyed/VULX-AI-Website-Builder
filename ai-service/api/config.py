@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     # API Keys
     e2b_api_key: Optional[str] = None
     e2b_sandbox_template_1: str
-
+    openai_api_key: str
+    openai_model: str 
+    
     class Config:
         env_file = ".env"   
 

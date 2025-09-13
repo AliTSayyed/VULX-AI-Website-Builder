@@ -15,7 +15,6 @@ type Config struct {
 	AppUrl       string
 	ApiUrl       string
 	Temporal     Temporal
-	LLM          LLM
 	AIServiceUrl string
 }
 
@@ -30,10 +29,6 @@ type Temporal struct {
 	HostPort string
 }
 
-type LLM struct {
-	OpenaiApiKey string
-}
-
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		DB: Db{
@@ -46,9 +41,6 @@ func LoadConfig() (*Config, error) {
 		AppUrl: getEnvOrDefault("APP_URL", "http://localhost:3000"),
 		Temporal: Temporal{
 			HostPort: getEnvOrDefault("TEMPORAL_ADDRESS", "temporal:7233"),
-		},
-		LLM: LLM{
-			OpenaiApiKey: getEnvOrDefault("OPENAI_API_KEY", ""),
 		},
 		AIServiceUrl: getEnvOrDefault("AI_SERVICE_URL", "http://ai-service:9999"),
 	}
@@ -90,9 +82,6 @@ func (c *Config) validate() error {
 	}
 	if c.Temporal.HostPort == "" {
 		return errors.New("TEMPORAL_ADDRESS cannot be empty")
-	}
-	if c.LLM.OpenaiApiKey == "" {
-		return errors.New("OPENAI_API_KEY cannot be empty")
 	}
 	if c.AIServiceUrl == "" {
 		return errors.New("AI_SERVICE_URL cannot be empty")

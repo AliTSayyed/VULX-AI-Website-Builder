@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
-	llm "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/LLM"
 	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"go.temporal.io/sdk/client"
@@ -15,14 +14,12 @@ import (
 
 type UserWorkflow struct {
 	client    client.Client
-	llm       *llm.LLM
 	aiservice *aiservice.AIService
 }
 
-func NewUserWorkflow(temporal *Temporal, llm *llm.LLM, aiservice *aiservice.AIService) *UserWorkflow {
+func NewUserWorkflow(temporal *Temporal, aiservice *aiservice.AIService) *UserWorkflow {
 	return &UserWorkflow{
 		client:    temporal.Client,
-		llm:       llm,
 		aiservice: aiservice,
 	}
 }
@@ -61,16 +58,7 @@ func (u *UserWorkflow) CreateSandbox(ctx context.Context, data UserWorkflowData)
 }
 
 func (u *UserWorkflow) UseLlm(ctx context.Context, data UserWorkflowData) error {
-	// prompt := "Write a simple react button component function"
-
-	// response, err := u.llm.OpenaiClient.GenerateContent(ctx, []llms.MessageContent{
-	// 	llms.TextParts(llms.ChatMessageTypeHuman, prompt),
-	// })
-	// if err != nil {
-	// 	return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed at UseLlm, %w", err))
-	// }
-
-	// fmt.Println("LLM Response:", response.Choices[0].Content)
+	// call aiservice llm function
 	return nil
 }
 
