@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from loguru import logger
-from pydantic import BaseModel, Field
-from services.sandbox_service import sandbox_service_dependency 
 from route_models import SandboxResponse
+from api.dependencies import sandbox_service_dependency
+from api.config import settings
 '''
 This route is for the Golang service.
 It will call this route to get a sandbox id / url which will be stored.
@@ -20,7 +20,7 @@ async def create_sandbox(sandbox_service: sandbox_service_dependency):
     try:
         logger.info("creating sandbox")
 
-        sbx = sandbox_service.create() 
+        sbx = sandbox_service.create(template_id=settings.e2b_sandbox_template_1) # currently only creating a nextjs sandbox  
         
         return SandboxResponse(
             id=sbx.sandbox_id,

@@ -4,4 +4,3 @@ pydantic-settings
 loguru
 langchain
 langchain-openai
-langchain-community

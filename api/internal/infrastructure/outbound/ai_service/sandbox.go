@@ -13,7 +13,7 @@ type SandboxResponse struct {
 }
 
 func (a *AIService) CreateSandbox(ctx context.Context) (*SandboxResponse, error) {
-	resp, err := a.client.Get(a.baseURL + "/ai-service/v1/sandbox/create")
+	resp, err := a.client.Get(a.baseURL + "/sandbox/create")
 	if err != nil {
 		// TODO domain wrap this error
 	}

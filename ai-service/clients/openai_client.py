@@ -25,27 +25,6 @@ class OpenAIClient:
                 max_retries=15
         )
 
-        shell_tool = ShellTool()
-        file_management_toolkit = FileManagementToolkit(root_dir="/home/user/") # root dir determined by docker file in sandbox template
-        file_management_tools = file_management_toolkit.get_tools() # giving access to all file management tools since operating in a sandbox
-        all_tools = [shell_tool] + file_management_tools 
-
-        code_agent = create_tool_calling_agent(
-          llm=self.client,
-          prompt= NEXTJS_PROMPT,
-          tools= all_tools
-        )
-
-        self.agent_executor = AgentExecutor(agent=code_agent, tools=all_tools, verbose=True)
-
     def get_client(self) -> ChatOpenAI:
         return self.client
-    
-    def get_code_agent(self) -> AgentExecutor:
-        return self.agent_executor
-
-def get_openai_client() -> OpenAIClient:
-    return OpenAIClient()
-
-# Annotated[Type, Metadata]
-openai_dependency = Annotated[OpenAIClient, Depends(get_openai_client)]
+ 

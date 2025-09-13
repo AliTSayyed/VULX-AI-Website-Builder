@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from clients.openai_client import openai_dependency
-from services.openai_service import OpenAICodeAgentService, OpenAIService
-from services.sandbox_service import sandbox_service_dependency 
 from route_models import OpenAIResponse
+from api.dependencies import openai_service_dependency, openai_code_agent_service_dependency
 '''
 This route will be used by the Golang service.
 It is tailored for responses by OpenAI specifically.
@@ -16,23 +14,21 @@ router = APIRouter (
 # TODO after a sand box is created from the create sandbox route, we need to send a request to this coding agent
 # this agent will need the user query and the id of the sandbox to execute its code on
 @router.post("/code/{id}")
-async def code_agent_request(id:id, message:str, openai: openai_dependency):
+async def code_agent_request(id:id, message:str, openai_code_agent: openai_code_agent_service_dependency):
     try:
-        openai_code_agent_service = OpenAICodeAgentService(llm=openai.get_client(), agent=openai.get_code_agent(), sandbox=sandbox_service_dependency)
-        openai_code_agent_service.process_code_agent_request(sandbox_id=id, user_message=message)
+        openai_code_agent.process_code_agent_request(sandbox_id=id, user_message=message)
         pass
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"openai code agent failed : {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"openai code agent failed: {str(e)}") 
     
 # if a user sends a regular question then ai model should be queried.
 # TODO  add user messages context in the param for a better answer.
 @router.post("/query")
-async def query_request(message: str, openai: openai_dependency) -> OpenAIResponse:
+async def query_request(message: str, openai_service: openai_service_dependency ) -> OpenAIResponse:
     try:
-        openai_service = OpenAIService(llm=openai.get_client())
         result = openai_service.process_query_request(user_message=message)
         return OpenAIResponse(content=result)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"openai query failed : {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"openai query failed: {str(e)}") 
 

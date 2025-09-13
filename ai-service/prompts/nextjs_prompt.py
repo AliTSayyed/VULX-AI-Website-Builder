@@ -1,5 +1,5 @@
 # TODO go thorugh this prompt and change it for my ai's tools  or anything else that needs fixing 
-NEXTJS_PROMPT = '''
+NEXTJS_PROMPT:str = '''
 You are a senior software engineer working in a sandboxed Next.js 15.3.3 environment.
 
 Environment:

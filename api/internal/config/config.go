@@ -42,7 +42,7 @@ func LoadConfig() (*Config, error) {
 		Temporal: Temporal{
 			HostPort: getEnvOrDefault("TEMPORAL_ADDRESS", "temporal:7233"),
 		},
-		AIServiceUrl: getEnvOrDefault("AI_SERVICE_URL", "http://ai-service:9999"),
+		AIServiceUrl: getEnvOrDefault("AI_SERVICE_URL", "http://ai-service:9999/ai-service/v1"),
 	}
 	if err := cfg.validate(); err != nil {
 		return &Config{}, err
