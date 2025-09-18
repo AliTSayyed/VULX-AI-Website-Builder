@@ -19,6 +19,7 @@ sandbox_service_dependency = Annotated[SandboxService, Depends(get_sandbox_servi
 # create the open ai client object (holds connection to openai llm)
 def get_openai_client() -> OpenAIClient:
     return OpenAIClient()
+
 openai_dependency = Annotated[OpenAIClient, Depends(get_openai_client)]
 
 # create open ai coding agent 

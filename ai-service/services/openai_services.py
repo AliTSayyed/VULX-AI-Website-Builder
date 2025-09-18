@@ -3,9 +3,10 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from prompts.nextjs_prompt import NEXTJS_PROMPT
 from prompts.query_prompt import QUERY_PROMPT
-from service_models import QueryResponse
-from sandbox_service import SandboxService
+from services.models.ai_models import QueryResponse
+from services.sandbox_service import SandboxService
 from clients.openai_client import OpenAIClient
+from pydantic import BaseModel, Field
 
 '''
 OpenAI service (sends requests to OpenAI llm). 
@@ -19,28 +20,29 @@ Can handle general queries as well.
 class OpenAICodeAgentService:
     def __init__(self, openai_client: OpenAIClient, sandbox_service:SandboxService):
         self.llm = openai_client.get_client()
-        code_agent_tools = [] # tools returned by sandbox service
+        code_agent_tools = sandbox_service.get_tools()
         code_agent = create_tool_calling_agent(
-          llm=self.llm,
-          prompt=NEXTJS_PROMPT,
-          tools= code_agent_tools 
-        )
+                llm=self.llm,
+                prompt=NEXTJS_PROMPT,
+                tools=code_agent_tools 
+            )
+        self.agent = AgentExecutor(agent=code_agent, tools=code_agent_tools, verbose=True)
 
-        self.agent_executor = AgentExecutor(agent=code_agent, tools=code_agent_tools, verbose=True)
-
-    def process_code_agent_request(self, sandbox_id:str, user_message:str):
-        try:
-            self.agent_executor.invoke({"user_message":user_message})
-            pass
+    async def process_code_request(self, sandbox_id:str, user_message:str):
+        try: 
+            contextual_input = f"Sandbox ID: {sandbox_id}\nTask: {user_message}"
+        
+            result = await self.agent.ainvoke({"input": contextual_input})
+            return result
         except Exception as e:
-            pass
+            raise e
 
 
 class OpenAIService:
     def __init__(self, openai_client: OpenAIClient):
         self.llm = openai_client.get_client()
 
-    def process_query_request(self, user_message:str) -> str:
+    async def process_query_request(self, user_message:str) -> str:
         try:
             parser = PydanticOutputParser(pydantic_object=QueryResponse)
             message = HumanMessagePromptTemplate.from_template(template=QUERY_PROMPT)

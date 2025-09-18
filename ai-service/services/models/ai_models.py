@@ -1,8 +1,4 @@
 from pydantic import BaseModel, Field
-'''
-Define all the models for service responses
-TODO makes these schemas more accurate
-'''
 
 # response of ai agent after executing code in a sandbox
 class CodeAgentResponse(BaseModel):
