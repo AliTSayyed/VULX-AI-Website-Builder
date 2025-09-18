@@ -1,33 +1,38 @@
 from fastapi import APIRouter, HTTPException
-from api.routes.models.openai_models import OpenAIResponse
+from api.routes.models.openai_models import OpenAICodeAgentRequest, OpenAICodeAgentResponse, OpenAIRequest, OpenAIResponse
 from api.dependencies import openai_service_dependency, openai_code_agent_service_dependency
+from loguru import logger
+import traceback
 '''
 This route will be used by the Golang service.
 It is tailored for responses by OpenAI specifically.
 The related OpenAI service will handle running code in the sandbox or a general query.
+# TODO  add user messages context in the param for a better answer.
 '''
 router = APIRouter (
     prefix="/openai",
-    tags=["Openai Service"]
+    tags=["Openai Service"],
 )
 
 
-# TODO after a sand box is created from the create sandbox route, we need to send a request to this coding agent
-# this agent will need the user query and the id of the sandbox to execute its code on
 @router.post("/{sandbox_id}/code")
-async def code_agent_request(sandbox_id:str, message:str, openai_code_agent: openai_code_agent_service_dependency):
+async def code_agent_request(sandbox_id:str, request:OpenAICodeAgentRequest, openai_code_agent: openai_code_agent_service_dependency):
     try:
-        # openai_code_agent.process_code_request(sandbox_id=id, user_message=message)
-       return 
+        result = await openai_code_agent.process_code_request(sandbox_id=sandbox_id, user_message=request.message)
+        return OpenAICodeAgentResponse(
+            human_message=request.message,
+            summary=result.summary,
+            commands=result.commands,
+            files=result.files
+        ) 
     except Exception as e:
+        logger.error(f"Full error: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"openai code agent failed: {str(e)}") 
     
-# if a user sends a regular question then ai model should be queried.
-# TODO  add user messages context in the param for a better answer.
 @router.post("/query")
-async def query_request(message: str, openai_service: openai_service_dependency ) -> OpenAIResponse:
+async def query_request(request: OpenAIRequest, openai_service: openai_service_dependency ) -> OpenAIResponse:
     try:
-        result = await openai_service.process_query_request(user_message=message)
+        result = await openai_service.process_query_request(user_message=request.message)
         return OpenAIResponse(content=result)
 
     except Exception as e:

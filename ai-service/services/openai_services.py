@@ -3,39 +3,58 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from prompts.nextjs_prompt import NEXTJS_PROMPT
 from prompts.query_prompt import QUERY_PROMPT
-from services.models.ai_models import QueryResponse
+from services.models.ai_models import QueryResult, CodeAgentResult, CodeAgentData
 from services.sandbox_service import SandboxService
 from clients.openai_client import OpenAIClient
-from pydantic import BaseModel, Field
-
+from services.agent_callback_service import CodeAgentCallBack
+from loguru import logger
 '''
 OpenAI service (sends requests to OpenAI llm). 
 Can handle coding with tools and will execute them in the sandbox.
 Can handle general queries as well.
 '''
 
-# TODO create methods and also instantiate OpenAIService with the sandbox service so it can run code directly?
-# TODO add tools from langchain community / make my own. Shell tool, File System tool (to create/update files and then to read files)
-# TODO add a prompt
 class OpenAICodeAgentService:
     def __init__(self, openai_client: OpenAIClient, sandbox_service:SandboxService):
-        self.llm = openai_client.get_client()
-        code_agent_tools = sandbox_service.get_tools()
-        code_agent = create_tool_calling_agent(
-                llm=self.llm,
-                prompt=NEXTJS_PROMPT,
-                tools=code_agent_tools 
+        try:
+            self.llm = openai_client.get_client()
+            code_agent_tools = sandbox_service.get_tools()
+            self.parser = PydanticOutputParser(pydantic_object=CodeAgentResult)
+            prompt = ChatPromptTemplate.from_template(
+            template=f"""
+            {NEXTJS_PROMPT}
+            {{format_instructions}}
+            {{input}}
+            {{agent_scratchpad}}
+            """
             )
-        self.agent = AgentExecutor(agent=code_agent, tools=code_agent_tools, verbose=True)
+            prompt_formatted = prompt.partial(format_instructions=self.parser.get_format_instructions())
+            code_agent = create_tool_calling_agent(
+                    llm=self.llm,
+                    prompt=prompt_formatted,
+                    tools=code_agent_tools 
+                )
+            self.agent = AgentExecutor(agent=code_agent, tools=code_agent_tools, verbose=True)
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAICodeAgentService: {str(e)}")
+            raise
 
     async def process_code_request(self, sandbox_id:str, user_message:str):
         try: 
-            contextual_input = f"Sandbox ID: {sandbox_id}\nTask: {user_message}"
-        
-            result = await self.agent.ainvoke({"input": contextual_input})
-            return result
+            contextual_input:str = f"Sandbox ID: {sandbox_id}\nTask: {user_message}"
+            callback = CodeAgentCallBack()
+            result = await self.agent.ainvoke({"input": contextual_input}, config={"callbacks":[callback]})
+            logger.info(result)
+            parsed_result = self.parser.parse(result["output"])
+            agent_actions = callback.get_result()
+
+            return CodeAgentData(
+                summary=parsed_result.summary,
+                commands=agent_actions.commands_executed,
+                files=agent_actions.updated_files
+            ) 
         except Exception as e:
-            raise e
+            raise Exception(f"openai code agent failed to generate response. error: {str(e)}")
 
 
 class OpenAIService:
@@ -44,7 +63,7 @@ class OpenAIService:
 
     async def process_query_request(self, user_message:str) -> str:
         try:
-            parser = PydanticOutputParser(pydantic_object=QueryResponse)
+            parser = PydanticOutputParser(pydantic_object=QueryResult)
             message = HumanMessagePromptTemplate.from_template(template=QUERY_PROMPT)
             chat_prompt = ChatPromptTemplate.from_messages(messages=[message])
 
@@ -55,6 +74,6 @@ class OpenAIService:
             data = parser.parse(response.content)
             return data.response
         except Exception as e:
-            pass
+            raise Exception(f"openai llm failed to generate response. error: {str(e)}")
 
     
