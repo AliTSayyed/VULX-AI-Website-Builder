@@ -1,6 +1,6 @@
 from langchain.callbacks.base import BaseCallbackHandler
-from services.models.sandbox_models import WriteFileData
 from typing import Dict, Any, List
+from services.models.sandbox_models import WriteEntry
 from services.models.callback_models import CodeAgentCallBackResult
 '''
 When a coding agent uses tools to update files or execute commands,
@@ -11,35 +11,42 @@ what action(s) it took. This call back object is made per code request
 
 class CodeAgentCallBack(BaseCallbackHandler):
     def __init__(self):
-        print("CALLBACK OBJECT CREATED")
         self.updated_files: Dict[str, str] = {} 
         self.commands_executed:List[str] = [] 
-    
-    def on_tool_end(self, output:str, **kwargs) -> None:
-        print(f"CALLBACK TRIGGERED TOOL NAME: {kwargs.get('name', 'unknown')}")
-        print(f"CALLBACK TRIGGERED Inputs: {kwargs.get('inputs', 'unknown')}")
-        print(f"CALLBACK TRIGGERED OUTPUT: {output}")
-        tool_name = kwargs.get("name", "")
-        inputs = kwargs.get("inputs", {})
+        # store agent tool inputs in pending, if tool was successful then return outputs to user
+        self.pending_files: Dict[str, str] = {}
+        self.pending_commands: List[str] = []
 
-        if "failed to" not in output and "error" not in output: # only capturing successful tool usage 
-            if tool_name == "write_sandbox_files":
-                self._capture_file_writes(inputs)
-            elif tool_name == "execute_sandbox_command":
-                self._capture_command(inputs)
+    def on_tool_start(self, serialized: dict[str, Any], input_str: str, *, inputs: dict[str, Any], **kwargs) -> None:
+        if not inputs:
+            return
+        if "write_data" in inputs:
+            self._capture_file_writes(inputs)
+        elif "command" in inputs:
+            self._capture_command(inputs)
+
+    def on_tool_end(self, output:str, **kwargs) -> None:
+        tool_name = kwargs.get("name", "")
+        if tool_name == 'write_sandbox_files' or tool_name == 'execute_sandbox_command':
+            # Move pending to final on success
+            if "failed to" not in output and "error" not in output:   
+                self.updated_files.update(self.pending_files)
+                self.commands_executed.extend(self.pending_commands)
+    
+        # Clear pending regardless
+        self.pending_files.clear()
+        self.pending_commands.clear()
         
     def _capture_file_writes(self, inputs:Dict[str, Any]) -> None:
-        write_data:List[WriteFileData] = inputs.get("write_data", []) # write data is the input name of write_sandbox_tool param
+        write_data = inputs.get("write_data", []) # write data is the input name of write_sandbox_tool param
 
         for file in write_data:
-            print(f"writing the folliwng {file.path}:{file.data}")
-            self.updated_files[file.path] = file.data
+            self.pending_files[file['path']] = file['data']
     
     def _capture_command(self, inputs:Dict[str, Any]) -> None:
         command = inputs.get("command", "")
         if command:
-            print(f"running this command: {command}")
-            self.commands_executed.append(command)
+            self.pending_commands.append(command)
     
     def get_result(self) -> CodeAgentCallBackResult:
         return CodeAgentCallBackResult(

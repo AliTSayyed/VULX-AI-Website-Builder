@@ -3,8 +3,10 @@ from typing import List, Dict, Optional
 from clients.openai_client import OpenAIClient
 from clients.google_client import GoogleClient
 
-# MAKE THESE OPTIONAL
+# Create AI Per LLM Type 
 class AIClient(BaseModel):
+    model_config = {"arbitrary_types_allowed": True}
+
     openai_client: Optional[OpenAIClient] = None
     google_client: Optional[GoogleClient] = None
     

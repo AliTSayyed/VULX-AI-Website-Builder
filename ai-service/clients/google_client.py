@@ -10,9 +10,7 @@ class GoogleClient():
     def __init__(self):    
         self.client = ChatGoogleGenerativeAI(
                 google_api_key=settings.google_api_key,
-                model=settings.google_model,
-                temperature=0.1,
-                max_retries=15
+                model=settings.google_model
         )
 
     def get_client(self) -> ChatGoogleGenerativeAI:

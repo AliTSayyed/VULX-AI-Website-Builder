@@ -69,7 +69,7 @@ Additional Guidelines:
 - You MUST use the execute_sandbox_command tool to install any packages
 - Do not print code inline in your responses
 - Do not wrap code in backticks
-- Use backticks (\`) for all strings to support embedded quotes safely.
+- Use backticks (ex: ``) for all strings to support embedded quotes safely.
 - Do not assume existing file contents — use read_sandbox_file if unsure
 - Do not include any commentary, explanation, or markdown after using tools
 - Always build full, real-world features or screens — not demos, stubs, or isolated widgets

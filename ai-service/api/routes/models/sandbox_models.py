@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from services.models.sandbox_models import WriteFileData
 from e2b_code_interpreter import WriteInfo
+from services.models.sandbox_models import WriteEntry
 from typing import List, Optional
 
 class CreateSandboxResponse(BaseModel):
@@ -21,9 +21,9 @@ class ExecuteSandboxResponse(BaseModel):
     stderr:str = Field(..., description="on stderr message")
 
 class WriteSandboxRequest(BaseModel):
-    write_data:List[WriteFileData] = Field(..., description="list of file paths and content")
+    write_data:List[WriteEntry] = Field(..., description="list of file paths and content")
 
 class WriteSandboxResponse(BaseModel):
     files_written_to:List[WriteInfo] = Field(..., description="successfully files written to")
-    write_data:List[WriteFileData] = Field(..., description="list of file paths and content")
+    write_data:List[WriteEntry] = Field(..., description="list of file paths and content")
 

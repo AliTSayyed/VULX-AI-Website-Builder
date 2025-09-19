@@ -22,6 +22,7 @@ class CodeAgentService:
             prompt = ChatPromptTemplate.from_template(
             template=f"""
             {NEXTJS_PROMPT}
+            CRITICAL: Your response MUST be valid JSON matching this exact format:
             {{format_instructions}}
             {{input}}
             {{agent_scratchpad}}
@@ -44,19 +45,30 @@ class CodeAgentService:
             callback = CodeAgentCallBack()
             result = await self.agent.ainvoke({"input": contextual_input}, config={"callbacks":[callback]})
 
-            logger.info(f"ai-agent result: {result}")
-            
-            parsed_result = self.parser.parse(result["output"])
-            agent_actions = callback.get_result()
+            # Validate output before parsing
+            output = result.get("output", "")
+            if not output:
+                logger.error("LLM returned empty output")
+                # Return with callback data but generic summary
+                agent_actions = callback.get_result()
+                code_result = CodeAgentData(
+                    summary="Task completed successfully",
+                    commands=agent_actions.commands_executed,
+                    files=agent_actions.updated_files
+                )
+            else: 
+                parsed_result = self.parser.parse(result["output"])
+                agent_actions = callback.get_result()
+                code_result = CodeAgentData(
+                    summary=parsed_result.summary,
+                    commands=agent_actions.commands_executed,
+                    files=agent_actions.updated_files
+                ) 
 
-            return CodeAgentData(
-                summary=parsed_result.summary,
-                commands=agent_actions.commands_executed,
-                files=agent_actions.updated_files
-            ) 
+            return code_result
+
         except Exception as e:
             raise Exception(f"code agent failed to generate response. error: {str(e)}")
-
 
 class GeneralAIService:
     def __init__(self, llm: AIClient):
@@ -68,11 +80,13 @@ class GeneralAIService:
             message = HumanMessagePromptTemplate.from_template(template=QUERY_PROMPT)
             chat_prompt = ChatPromptTemplate.from_messages(messages=[message])
 
-            chat_prompt_with_values = chat_prompt.format_prompt(user_query=user_message, format_instructions=parser.get_format_instructions())
+            chat_prompt_with_values = chat_prompt.format_prompt(user_message=user_message, format_instructions=parser.get_format_instructions())
             
             response = self.llm(chat_prompt_with_values.to_messages())
             
-            data = parser.parse(response.content)
+            content:str = str(response.content)
+
+            data = parser.parse(content)
             return data.response
         except Exception as e:
             raise Exception(f"llm failed to generate response. error: {str(e)}")

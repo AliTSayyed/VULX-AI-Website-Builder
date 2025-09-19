@@ -1,6 +1,6 @@
 from e2b_code_interpreter import Sandbox, WriteInfo, EntryInfo, CommandResult
 from langchain.tools import BaseTool
-from services.models.sandbox_models import TerminalInfo, WriteFileData, ReadToolInput, ListToolInput, WriteToolInput, CommandToolInput
+from services.models.sandbox_models import TerminalInfo, WriteEntry, ReadToolInput, ListToolInput, WriteToolInput, CommandToolInput
 from pydantic import BaseModel, Field
 from typing import List, Type
 
@@ -46,10 +46,10 @@ class SandboxService():
         file_conent: str = sbx.files.read(path=path)
         return file_conent
 
-    def write_files(self, sandbox_id: str, write_data:List[WriteFileData]) -> List[WriteInfo]:
+    def write_files(self, sandbox_id: str, write_data:List[WriteEntry]) -> List[WriteInfo]:
         sbx = Sandbox.connect(sandbox_id)
-        dict_data = [item.model_dump() for item in write_data] # converts pydantic model into a proper dict data structure
-        result:List[WriteInfo] = sbx.files.write_files(dict_data)
+        dict_data = [item.model_dump() for item in write_data] # converts pydantic model into a proper dict data structure\
+        result:List[WriteInfo] = sbx.files.write_files(files=dict_data) # type: ignore
         return result
     
     def execute_terminal_command(self, sandbox_id:str, command:str) -> TerminalInfo:
@@ -98,7 +98,7 @@ class SandboxService():
         sandbox_service: 'SandboxService' = Field(exclude=True)
         args_schema: Type[BaseModel] = WriteToolInput   
         
-        def _run(self, sandbox_id: str, write_data: List[WriteFileData]) -> str:
+        def _run(self, sandbox_id: str, write_data: List[WriteEntry]) -> str:
             try:
                 result: List[WriteInfo] = self.sandbox_service.write_files(sandbox_id=sandbox_id, write_data=write_data)
                 
