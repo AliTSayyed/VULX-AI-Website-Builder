@@ -11,10 +11,14 @@ what action(s) it took. This call back object is made per code request
 
 class CodeAgentCallBack(BaseCallbackHandler):
     def __init__(self):
+        print("CALLBACK OBJECT CREATED")
         self.updated_files: Dict[str, str] = {} 
         self.commands_executed:List[str] = [] 
     
     def on_tool_end(self, output:str, **kwargs) -> None:
+        print(f"CALLBACK TRIGGERED TOOL NAME: {kwargs.get('name', 'unknown')}")
+        print(f"CALLBACK TRIGGERED Inputs: {kwargs.get('inputs', 'unknown')}")
+        print(f"CALLBACK TRIGGERED OUTPUT: {output}")
         tool_name = kwargs.get("name", "")
         inputs = kwargs.get("inputs", {})
 
@@ -28,11 +32,13 @@ class CodeAgentCallBack(BaseCallbackHandler):
         write_data:List[WriteFileData] = inputs.get("write_data", []) # write data is the input name of write_sandbox_tool param
 
         for file in write_data:
+            print(f"writing the folliwng {file.path}:{file.data}")
             self.updated_files[file.path] = file.data
     
     def _capture_command(self, inputs:Dict[str, Any]) -> None:
         command = inputs.get("command", "")
         if command:
+            print(f"running this command: {command}")
             self.commands_executed.append(command)
     
     def get_result(self) -> CodeAgentCallBackResult:

@@ -4,3 +4,4 @@ pydantic-settings
 loguru
 langchain
 langchain-openai
+langchain-google-genai

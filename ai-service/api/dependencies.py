@@ -2,7 +2,9 @@ from fastapi import Depends
 from typing import Annotated
 from services.sandbox_service import SandboxService
 from clients.openai_client import OpenAIClient
-from services.openai_services import OpenAICodeAgentService, OpenAIService
+from clients.google_client import GoogleClient
+from services.ai_services import CodeAgentService, GeneralAIService
+from services.models.ai_models import AIClient
 '''
 This file will instantiate all the necessary objects that will be passed around
 (Dependency Injection) in various services and routes.
@@ -25,15 +27,40 @@ openai_dependency = Annotated[OpenAIClient, Depends(get_openai_client)]
 # create open ai coding agent 
 def get_openai_code_agent_service(
         openai: openai_dependency,
-        sandbox: sandbox_service_dependency) -> OpenAICodeAgentService:  
-    return OpenAICodeAgentService(openai_client=openai, sandbox_service=sandbox)
+        sandbox: sandbox_service_dependency) -> CodeAgentService:
+    ai_client = AIClient(openai_client=openai)  
+    return CodeAgentService(llm=ai_client, sandbox_service=sandbox)
 
-openai_code_agent_service_dependency = Annotated[OpenAICodeAgentService, Depends(get_openai_code_agent_service)]
+openai_code_agent_service_dependency = Annotated[CodeAgentService, Depends(get_openai_code_agent_service)]
 
 # create general openai llm service
-def get_openai_service(openai: openai_dependency) -> OpenAIService:
-    return OpenAIService(openai_client=openai)
+def get_openai_service(openai: openai_dependency) -> GeneralAIService:
+    ai_client = AIClient(openai_client=openai)  
+    return GeneralAIService(llm=ai_client)
 
-openai_service_dependency = Annotated[OpenAIService, Depends(get_openai_service)]
+openai_service_dependency = Annotated[GeneralAIService, Depends(get_openai_service)]
+
+# create the google ai client object (holds connection to google ai llm)
+def get_google_client() -> GoogleClient:
+    return GoogleClient()
+
+google_dependency = Annotated[GoogleClient, Depends(get_google_client)]
+
+# create google coding agent 
+def get_google_code_agent_service(
+        google: google_dependency,
+        sandbox: sandbox_service_dependency) -> CodeAgentService: 
+    ai_client = AIClient(google_client=google)  
+    return CodeAgentService(llm=ai_client, sandbox_service=sandbox)
+
+google_code_agent_service_dependency = Annotated[CodeAgentService, Depends(get_google_code_agent_service)]
+
+# create general google llm service
+def get_google_service(google: google_dependency) -> GeneralAIService:
+    ai_client = AIClient(google_client=google)  
+    return GeneralAIService(llm=ai_client)
+
+google_service_dependency = Annotated[GeneralAIService, Depends(get_google_service)]
+
 
 

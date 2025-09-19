@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     e2b_sandbox_nextjs_template_id: str
     openai_api_key: str
     openai_model: str 
+    google_api_key:str
+    google_model:str
     
     class Config:
         env_file = ".env"   

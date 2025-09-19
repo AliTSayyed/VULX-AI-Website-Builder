@@ -3,21 +3,20 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from prompts.nextjs_prompt import NEXTJS_PROMPT
 from prompts.query_prompt import QUERY_PROMPT
-from services.models.ai_models import QueryResult, CodeAgentResult, CodeAgentData
+from services.models.ai_models import AIClient, QueryResult, CodeAgentResult, CodeAgentData
 from services.sandbox_service import SandboxService
-from clients.openai_client import OpenAIClient
 from services.agent_callback_service import CodeAgentCallBack
 from loguru import logger
 '''
-OpenAI service (sends requests to OpenAI llm). 
+Ai Service service (sends requests to llm). 
 Can handle coding with tools and will execute them in the sandbox.
 Can handle general queries as well.
 '''
 
-class OpenAICodeAgentService:
-    def __init__(self, openai_client: OpenAIClient, sandbox_service:SandboxService):
+class CodeAgentService:
+    def __init__(self, llm: AIClient, sandbox_service:SandboxService):
         try:
-            self.llm = openai_client.get_client()
+            self.llm = llm.get_client()
             code_agent_tools = sandbox_service.get_tools()
             self.parser = PydanticOutputParser(pydantic_object=CodeAgentResult)
             prompt = ChatPromptTemplate.from_template(
@@ -34,9 +33,9 @@ class OpenAICodeAgentService:
                     prompt=prompt_formatted,
                     tools=code_agent_tools 
                 )
-            self.agent = AgentExecutor(agent=code_agent, tools=code_agent_tools, verbose=True)
+            self.agent = AgentExecutor(agent=code_agent, tools=code_agent_tools, verbose=False)
         except Exception as e:
-            logger.error(f"Failed to initialize OpenAICodeAgentService: {str(e)}")
+            logger.error(f"failed to initialize AICodeAgentService. error: {str(e)}")
             raise
 
     async def process_code_request(self, sandbox_id:str, user_message:str):
@@ -44,7 +43,9 @@ class OpenAICodeAgentService:
             contextual_input:str = f"Sandbox ID: {sandbox_id}\nTask: {user_message}"
             callback = CodeAgentCallBack()
             result = await self.agent.ainvoke({"input": contextual_input}, config={"callbacks":[callback]})
-            logger.info(result)
+
+            logger.info(f"ai-agent result: {result}")
+            
             parsed_result = self.parser.parse(result["output"])
             agent_actions = callback.get_result()
 
@@ -54,12 +55,12 @@ class OpenAICodeAgentService:
                 files=agent_actions.updated_files
             ) 
         except Exception as e:
-            raise Exception(f"openai code agent failed to generate response. error: {str(e)}")
+            raise Exception(f"code agent failed to generate response. error: {str(e)}")
 
 
-class OpenAIService:
-    def __init__(self, openai_client: OpenAIClient):
-        self.llm = openai_client.get_client()
+class GeneralAIService:
+    def __init__(self, llm: AIClient):
+        self.llm = llm.get_client()
 
     async def process_query_request(self, user_message:str) -> str:
         try:
@@ -74,6 +75,6 @@ class OpenAIService:
             data = parser.parse(response.content)
             return data.response
         except Exception as e:
-            raise Exception(f"openai llm failed to generate response. error: {str(e)}")
+            raise Exception(f"llm failed to generate response. error: {str(e)}")
 
     
