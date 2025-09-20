@@ -1,7 +1,7 @@
 fastapi[standard]
 e2b_code_interpreter
 pydantic-settings
-loguru
+structlog
 langchain
 langchain-openai
 langchain-google-genai

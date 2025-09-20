@@ -5,11 +5,19 @@ from api.routes.sandbox import router as sandbox_router
 from api.routes.openai import router as openai_router
 from api.routes.google import router as google_router
 from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
-import time
+from api.config import settings
+from utils.logging import LoggingMiddleWare
+
+#env
+env = settings.environment
+PRODUCTION = env == "production"
 
 # create server
-ai_service = FastAPI()
+ai_service = FastAPI(
+    docs_url=None if PRODUCTION else "/docs",
+    redoc_url=None if PRODUCTION else "/redoc",
+    openapi_url=None if PRODUCTION else "/openapi.json",
+)
 
 # add api/v1 prefix to all enpoints
 api_v1_router = APIRouter(prefix="/ai-service/v1")
@@ -30,12 +38,15 @@ ai_service.add_middleware(
     allow_headers=["*"],
 )
 
- # Log  request
-@ai_service.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    logger.info(f"Request: {request.method} {request.url}")
-    response: Response = await call_next(request)
-    duration = time.time() - start_time
-    logger.info(f"Response: {request.method} {request.url} {request.json}- Status: {response.status_code} - Duration: {duration:.3f}s")
-    return response
+# log all http requests
+ai_service.add_middleware(LoggingMiddleWare)
+
+#  # Log  request
+# @ai_service.middleware("http")
+# async def log_requests(request: Request, call_next):
+#     start_time = time.time()
+#     logger.info(f"Request: {request.method} {request.url}")
+#     response: Response = await call_next(request)
+#     duration = time.time() - start_time
+#     logger.info(f"Response: {request.method} {request.url} {request.json}- Status: {response.status_code} - Duration: {duration:.3f}s")
+#     return response

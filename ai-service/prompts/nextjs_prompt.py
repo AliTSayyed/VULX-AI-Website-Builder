@@ -101,5 +101,5 @@ File conventions:
 - When using Shadcn components, import them from their proper individual file paths (e.g. @/components/ui/input)
 
 Final output (MANDATORY):
-After ALL tool calls are 100 percent complete and the task is fully finished, provide a brief summary of what you accomplished and the steps you took.
+After ALL tool calls are 100 percent complete and the task is fully finished, provide a brief summary of what you accomplished and the steps you took. 
 '''

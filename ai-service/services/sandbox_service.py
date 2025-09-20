@@ -3,22 +3,32 @@ from langchain.tools import BaseTool
 from services.models.sandbox_models import TerminalInfo, WriteEntry, ReadToolInput, ListToolInput, WriteToolInput, CommandToolInput
 from pydantic import BaseModel, Field
 from typing import List, Type
+from utils.logging import logger
 
 '''
 SandboxService: Handles E2B code execution sandbox operations
 Creates secure sandboxes for running untrusted code
 Manages sandbox lifecycle and file operations
 Provides custom tools for agents to interact with the sandbox 
+None of these are async, forces the llm to do one action at a time.
 '''
 
 class SandboxService():
     def __init__(self):
-       self.tools = [  
-           self.SandboxListTool(sandbox_service=self),
-           self.SandboxReadTool(sandbox_service=self),
-           self.SandboxWriteTool(sandbox_service=self),
-           self.SandboxCommandTool(sandbox_service=self)
-        ] 
+        try:
+            self.tools = [  
+                self.SandboxListTool(sandbox_service=self),
+                self.SandboxReadTool(sandbox_service=self),
+                self.SandboxWriteTool(sandbox_service=self),
+                self.SandboxCommandTool(sandbox_service=self)
+            ]
+
+        except Exception as e:
+            logger.error("sandbox_service_initialization_failed",
+                        error_type=type(e).__name__,
+                        error=str(e),
+                        exc_info=True)
+            raise
     
     def get_tools(self):
         return self.tools
@@ -28,6 +38,11 @@ class SandboxService():
         return sbx
     
     def list_files(self, sandbox_id:str, path:str = "/home/user/") -> List[WriteInfo]:
+        # path check
+        forbidden_paths = ['/', '/root', '/etc', '/sys', '/proc']
+        if path in forbidden_paths:
+            raise Exception(f"do not access the follwing path: {path} in the sandbox")
+        
         sbx:Sandbox = Sandbox.connect(sandbox_id=sandbox_id)
         sandbox_files:List[EntryInfo] = sbx.files.list(path)
         files:List[WriteInfo] = []
