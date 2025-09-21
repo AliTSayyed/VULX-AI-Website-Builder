@@ -1,2 +1,4 @@
 .venv
 e2b.toml
+.ruff_cache
+
