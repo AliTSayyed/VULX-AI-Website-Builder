@@ -1,5 +1,5 @@
 from langchain.prompts import HumanMessagePromptTemplate, ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+from langchain.output_parsers import PydanticOutputParser, OutputParserException
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from prompts.nextjs_prompt import NEXTJS_PROMPT
 from prompts.query_prompt import QUERY_PROMPT
@@ -53,7 +53,6 @@ class CodeAgentService:
             result = await self.agent.ainvoke({"input": contextual_input}, config={"callbacks":[callback]})
             
             # Validate output before parsing
-            # TODO Google gemeni fails to parse correctly need to come up with a consistent output method
             output = result.get("output", "")
             if not output:
                 logger.warning("llm_returned_empty_output", 
@@ -67,13 +66,24 @@ class CodeAgentService:
                 )
             else: 
                 logger.debug("parsing_llm_output")
-                parsed_result = self.parser.parse(result["output"])
-                agent_actions = callback.get_result()
-                code_result = CodeAgentData(
-                    summary=parsed_result.summary,
-                    commands=agent_actions.commands_executed,
-                    files=agent_actions.updated_files
-                ) 
+
+                try:
+                    parsed_result = self.parser.parse(result["output"])
+                    agent_actions = callback.get_result()
+                    code_result = CodeAgentData(
+                        summary=parsed_result.summary,
+                        commands=agent_actions.commands_executed,
+                        files=agent_actions.updated_files
+                    )
+                except OutputParserException as e:  # Pydantic validation error if llm fails to convert to json, probably will fix this later
+                    logger.warning("json_parsing_failed_using_raw_output", 
+                                error=str(e))
+                    agent_actions = callback.get_result()
+                    code_result = CodeAgentData(
+                        summary=output,  
+                        commands=agent_actions.commands_executed,
+                        files=agent_actions.updated_files
+                    )
 
             return code_result
 
@@ -83,7 +93,7 @@ class CodeAgentService:
                     error_type=type(e).__name__,
                     error=str(e),
                     exc_info=True)
-            raise Exception(f"code agent failed to generate response. error: {str(e)}")
+            raise 
 
 class GeneralAIService:
     def __init__(self, llm: AIClient):
@@ -109,6 +119,6 @@ class GeneralAIService:
                         error_type=type(e).__name__,
                         error=str(e),
                         exc_info=True)
-            raise Exception(f"llm failed to generate response. error: {str(e)}")
+            raise
 
     
