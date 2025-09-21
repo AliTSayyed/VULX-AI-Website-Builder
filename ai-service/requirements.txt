@@ -1,0 +1,7 @@
+fastapi[standard]
+e2b_code_interpreter
+pydantic-settings
+structlog
+langchain
+langchain-openai
+langchain-google-genai

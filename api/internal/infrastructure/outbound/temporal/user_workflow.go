@@ -6,22 +6,21 @@ import (
 	"time"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
-	llm "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/LLM"
+	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
-	"github.com/tmc/langchaingo/llms"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
 type UserWorkflow struct {
-	client client.Client
-	llm    *llm.LLM
+	client    client.Client
+	aiservice *aiservice.AIService
 }
 
-func NewUserWorkflow(temporal *Temporal, llm *llm.LLM) *UserWorkflow {
+func NewUserWorkflow(temporal *Temporal, aiservice *aiservice.AIService) *UserWorkflow {
 	return &UserWorkflow{
-		client: temporal.Client,
-		llm:    llm,
+		client:    temporal.Client,
+		aiservice: aiservice,
 	}
 }
 
@@ -52,23 +51,14 @@ func (u *UserWorkflow) StartUserWorkflow(ctx context.Context) error {
 }
 
 // Activities need context.Context, not workflow.Context
-func (u *UserWorkflow) SayHello(ctx context.Context, data UserWorkflowData) error {
-	time.Sleep(5 * time.Second)
-	fmt.Println(data.Greeting)
-	return nil
+func (u *UserWorkflow) CreateSandbox(ctx context.Context, data UserWorkflowData) error {
+	SandboxResponse, err := u.aiservice.CreateSandbox(ctx)
+	utils.Logger.Info(SandboxResponse.ID)
+	return err
 }
 
 func (u *UserWorkflow) UseLlm(ctx context.Context, data UserWorkflowData) error {
-	prompt := "Write a simple react button component function"
-
-	response, err := u.llm.OpenaiClient.GenerateContent(ctx, []llms.MessageContent{
-		llms.TextParts(llms.ChatMessageTypeHuman, prompt),
-	})
-	if err != nil {
-		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed at UseLlm, %w", err))
-	}
-
-	fmt.Println("LLM Response:", response.Choices[0].Content)
+	// call aiservice llm function
 	return nil
 }
 
@@ -80,7 +70,7 @@ func (u *UserWorkflow) UserWorkflowSteps(ctx workflow.Context, input UserWorkflo
 	}
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
-	err := workflow.ExecuteActivity(ctx, "SayHello", input).Get(ctx, nil)
+	err := workflow.ExecuteActivity(ctx, "CreateSandbox", input).Get(ctx, nil)
 	utils.Logger.Info("Running workflow step 1 inside user workflow")
 	if err != nil {
 		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed at UserWorkflowSteps, %w", err))

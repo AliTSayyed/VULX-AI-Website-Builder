@@ -11,11 +11,11 @@ import (
 )
 
 type Config struct {
-	DB       Db
-	AppUrl   string
-	ApiUrl   string
-	Temporal Temporal
-	LLM      LLM
+	DB           Db
+	AppUrl       string
+	ApiUrl       string
+	Temporal     Temporal
+	AIServiceUrl string
 }
 
 type Db struct {
@@ -27,10 +27,6 @@ type Db struct {
 
 type Temporal struct {
 	HostPort string
-}
-
-type LLM struct {
-	OpenaiApiKey string
 }
 
 func LoadConfig() (*Config, error) {
@@ -46,9 +42,7 @@ func LoadConfig() (*Config, error) {
 		Temporal: Temporal{
 			HostPort: getEnvOrDefault("TEMPORAL_ADDRESS", "temporal:7233"),
 		},
-		LLM: LLM{
-			OpenaiApiKey: getEnvOrDefault("OPENAI_API_KEY", ""),
-		},
+		AIServiceUrl: getEnvOrDefault("AI_SERVICE_URL", "http://ai-service:9999/ai-service/v1"),
 	}
 	if err := cfg.validate(); err != nil {
 		return &Config{}, err
@@ -89,8 +83,8 @@ func (c *Config) validate() error {
 	if c.Temporal.HostPort == "" {
 		return errors.New("TEMPORAL_ADDRESS cannot be empty")
 	}
-	if c.LLM.OpenaiApiKey == "" {
-		return errors.New("OPENAI_API_KEY cannot be empty")
+	if c.AIServiceUrl == "" {
+		return errors.New("AI_SERVICE_URL cannot be empty")
 	}
 	return nil
 }

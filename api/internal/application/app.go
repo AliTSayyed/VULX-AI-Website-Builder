@@ -20,7 +20,7 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	httpHandlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/http/handlers"
-	llm "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/LLM"
+	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
@@ -38,10 +38,10 @@ func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
 	// ddd dependency injection
-	llmService := llm.New(cfg.LLM)
+	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
 
 	temporalService := temporal.New(cfg.Temporal)
-	userWorkflow := temporal.NewUserWorkflow(temporalService, llmService)
+	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
 	temporalService.RegisterWorkers(userWorkflow)
 
 	db := postgres.NewDb(cfg.DB)
