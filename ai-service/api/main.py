@@ -1,5 +1,4 @@
-from fastapi import FastAPI, APIRouter, Request
-from starlette.responses import Response
+from fastapi import FastAPI, APIRouter
 from api.routes.healthz import router as health_router
 from api.routes.sandbox import router as sandbox_router
 from api.routes.openai import router as openai_router
@@ -8,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.config import settings
 from utils.logging import LoggingMiddleWare
 
-#env
+# env
 env = settings.environment
 PRODUCTION = env == "production"
 
@@ -29,10 +28,10 @@ api_v1_router.include_router(google_router)
 # main server only knows the api v1 router
 ai_service.include_router(api_v1_router)
 
-# need to configure for production 
+# need to configure for production
 ai_service.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://api:8080"], 
+    allow_origins=["http://api:8080"],  # allow requests from golang server
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -40,13 +39,3 @@ ai_service.add_middleware(
 
 # log all http requests
 ai_service.add_middleware(LoggingMiddleWare)
-
-#  # Log  request
-# @ai_service.middleware("http")
-# async def log_requests(request: Request, call_next):
-#     start_time = time.time()
-#     logger.info(f"Request: {request.method} {request.url}")
-#     response: Response = await call_next(request)
-#     duration = time.time() - start_time
-#     logger.info(f"Response: {request.method} {request.url} {request.json}- Status: {response.status_code} - Duration: {duration:.3f}s")
-#     return response

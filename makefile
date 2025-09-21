@@ -3,11 +3,11 @@
 .PHONY: app api clean nuke gen plint
 
 # Run app service (dependecies in docker-compose runs all related services)
-app:
+app: clean
 	@docker compose run --build --service-ports --rm app
 
 # hot reload api build
-api:
+api: clean
 	@go run github.com/cespare/reflex@latest -d none -r 'api/.*' -s -- docker compose run --build --service-ports --rm api
 
 # stop all containers
