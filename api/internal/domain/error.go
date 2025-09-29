@@ -9,6 +9,11 @@ import (
 	"fmt"
 )
 
+var (
+	ErrUnauthenticated  = NewError(ErrorTypeUnauthenticated, errors.New("unauthenticated"))
+	ErrPermissionDenied = NewError(ErrorTypePermissionDenied, errors.New("permission denied"))
+)
+
 type ErrorType int
 
 const (

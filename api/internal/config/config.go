@@ -16,6 +16,8 @@ type Config struct {
 	ApiUrl       string
 	Temporal     Temporal
 	AIServiceUrl string
+	Oauth        Oauth
+	Redis        Redis
 }
 
 type Db struct {
@@ -27,6 +29,21 @@ type Db struct {
 
 type Temporal struct {
 	HostPort string
+}
+
+type Oauth struct {
+	Google OauthProvider
+}
+
+type OauthProvider struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+type Redis struct {
+	Host string
+	Name string
 }
 
 func LoadConfig() (*Config, error) {
@@ -43,6 +60,17 @@ func LoadConfig() (*Config, error) {
 			HostPort: getEnvOrDefault("TEMPORAL_ADDRESS", "temporal:7233"),
 		},
 		AIServiceUrl: getEnvOrDefault("AI_SERVICE_URL", "http://ai-service:9999/ai-service/v1"),
+		Oauth: Oauth{
+			Google: OauthProvider{
+				getEnvOrDefault("GOOGLE_CLIENT_ID", ""),
+				getEnvOrDefault("GOOGLE_CLIENT_SECRET", ""),
+				getEnvOrDefault("REDIRECT_URL", "localhost:8080/auth/callback"),
+			},
+		},
+		Redis: Redis{
+			Host: getEnvOrDefault("REDIS_HOST", ""),
+			Name: getEnvOrDefault("REDIS_NAME", "0"),
+		},
 	}
 	if err := cfg.validate(); err != nil {
 		return &Config{}, err
@@ -85,6 +113,15 @@ func (c *Config) validate() error {
 	}
 	if c.AIServiceUrl == "" {
 		return errors.New("AI_SERVICE_URL cannot be empty")
+	}
+	if c.Oauth.Google.ClientID == "" {
+		return errors.New("GOOGLE_CLIENT_ID cannot be empty")
+	}
+	if c.Oauth.Google.ClientSecret == "" {
+		return errors.New("GOOGLE_SECRET cannot be empty")
+	}
+	if c.Oauth.Google.RedirectURL == "" {
+		return errors.New("REDIRECT_URL cannot be empty")
 	}
 	return nil
 }

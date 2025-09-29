@@ -1,11 +1,12 @@
+package domain
+
 /*
-* A domain defines what a user looks like in our business logic
+* A define what a user looks like in our business logic
 * validates data, ensures business rules are follwed, ensures proper behavior
 * only if incoming data satisfies the domain level requirements can the data be
 * sent to the database.
 * expose nothing in the domain.User struct, use methods to get values
  */
-package domain
 
 import (
 	"errors"
@@ -14,29 +15,49 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrUserNameEmpty = NewError(ErrorTypeInvalid, errors.New("user name cannot be empty"))
+var (
+	ErrUserFirstNameEmpty = NewError(ErrorTypeInvalid, errors.New("user first name cannot be empty"))
+	ErrUserLastNameEmpty  = NewError(ErrorTypeInvalid, errors.New("user last name cannot be empty"))
+	ErrUserEmailEmpty     = NewError(ErrorTypeInvalid, errors.New("user email cannot be empty"))
+)
 
 type User struct {
-	id   uuid.UUID
-	name string
+	id        uuid.UUID
+	firstName string
+	lastName  string
+	email     string
+	isActive  bool
 }
 
-func NewUser(name string) (*User, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, ErrUserNameEmpty
+func NewUser(firstName, lastName, email string) (*User, error) {
+	firstName = strings.TrimSpace(firstName)
+	if firstName == "" {
+		return nil, ErrUserFirstNameEmpty
+	}
+
+	if lastName == "" {
+		return nil, ErrUserLastNameEmpty
+	}
+
+	if email == "" {
+		return nil, ErrUserEmailEmpty
 	}
 
 	return &User{
-		id:   uuid.New(),
-		name: name,
+		id:        uuid.New(),
+		firstName: firstName,
+		lastName:  lastName,
+		email:     email,
 	}, nil
 }
 
-func RestoreUser(id uuid.UUID, name string) *User {
+func RestoreUser(id uuid.UUID, firstName string, lastName string, email string) *User {
 	return &User{
-		id:   id,
-		name: name,
+		id:        id,
+		firstName: firstName,
+		lastName:  lastName,
+		email:     email,
+		isActive:  true,
 	}
 }
 
@@ -47,9 +68,33 @@ func (u *User) ID() uuid.UUID {
 	return u.id
 }
 
-func (u *User) Name() string {
+func (u *User) FirstName() string {
 	if u == nil {
 		return ""
 	}
-	return u.name
+	return u.firstName
+}
+
+func (u *User) LastName() string {
+	if u == nil {
+		return ""
+	}
+	return u.lastName
+}
+
+func (u *User) Email() string {
+	if u == nil {
+		return ""
+	}
+	return u.email
+}
+
+func (u *User) IsActive() bool {
+	return u.isActive
+}
+
+type UserWithCredentials struct {
+	userID     uuid.UUID
+	provider   string
+	providerID string
 }

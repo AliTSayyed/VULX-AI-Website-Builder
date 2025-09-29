@@ -15,16 +15,19 @@ import (
 	"connectrpc.com/vanguard"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/cache"
 	rpclogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	httpHandlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/http/handlers"
 	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/oauth"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 )
 
 type App struct {
@@ -32,6 +35,7 @@ type App struct {
 	security *security.SecurityAdapter
 	db       *sqlx.DB
 	temporal *temporal.Temporal
+	redis    *redis.Client
 }
 
 func New(cfg *config.Config) *App {
@@ -39,6 +43,10 @@ func New(cfg *config.Config) *App {
 
 	// ddd dependency injection
 	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
+
+	redis := cache.NewRedisClient(cfg.Redis)
+	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
+	OAuthService := services.NewOauthService(OAuthRegistry, redis)
 
 	temporalService := temporal.New(cfg.Temporal)
 	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
@@ -64,7 +72,7 @@ func New(cfg *config.Config) *App {
 
 	// create routes
 	mux := http.NewServeMux()
-	mux.Handle("/healthz", healthz())
+	mux.Handle("/healthz", httpHandlers.Healthz())
 	mux.Handle("/", transcoder)
 	mux.Handle("/docs/", http.StripPrefix("/docs", httpHandlers.NewHandler()))
 
@@ -74,6 +82,7 @@ func New(cfg *config.Config) *App {
 		security: security.NewSecurityAdapter(cfg),
 		db:       db,
 		temporal: temporalService,
+		redis:    redis.Client,
 	}
 
 	return app
@@ -106,6 +115,7 @@ func (a *App) Start(ctx context.Context) error {
 		defer a.temporal.StopWorkers()
 		defer a.temporal.Client.Close()
 		defer a.db.Close()
+		defer a.redis.Close()
 		defer cancel()
 		return server.Shutdown(timeout)
 	}
