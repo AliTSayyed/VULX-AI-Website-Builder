@@ -18,6 +18,7 @@ type Config struct {
 	AIServiceUrl string
 	Oauth        Oauth
 	Redis        Redis
+	Crypto       Crypto
 }
 
 type Db struct {
@@ -46,6 +47,11 @@ type Redis struct {
 	Name string
 }
 
+// generate seed with openssl rand -base64 32
+type Crypto struct {
+	Seed string
+}
+
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		DB: Db{
@@ -70,6 +76,9 @@ func LoadConfig() (*Config, error) {
 		Redis: Redis{
 			Host: getEnvOrDefault("REDIS_HOST", ""),
 			Name: getEnvOrDefault("REDIS_NAME", "0"),
+		},
+		Crypto: Crypto{
+			Seed: getEnvOrDefault("JWT_SEED", ""),
 		},
 	}
 	if err := cfg.validate(); err != nil {
@@ -122,6 +131,9 @@ func (c *Config) validate() error {
 	}
 	if c.Oauth.Google.RedirectURL == "" {
 		return errors.New("REDIRECT_URL cannot be empty")
+	}
+	if c.Crypto.Seed == "" {
+		return errors.New("JWT_SEED cannot be empty")
 	}
 	return nil
 }

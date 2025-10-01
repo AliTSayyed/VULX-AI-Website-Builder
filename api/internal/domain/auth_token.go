@@ -47,13 +47,12 @@ func ParseTokenType(s string) TokenType {
 }
 
 type AuthToken struct {
-	id         uuid.UUID
-	userID     uuid.UUID
-	name       string
-	tokenType  TokenType
-	createdAt  time.Time
-	expiresAt  time.Time
-	lastUsedAt *time.Time
+	id        uuid.UUID
+	userID    uuid.UUID
+	name      string
+	tokenType TokenType
+	createdAt time.Time
+	expiresAt time.Time
 }
 
 func NewAuthToken(userID uuid.UUID, name string, tokenType TokenType, expirestAt time.Time) (*AuthToken, error) {
@@ -72,25 +71,23 @@ func NewAuthToken(userID uuid.UUID, name string, tokenType TokenType, expirestAt
 	}
 
 	return &AuthToken{
-		id:         uuid.New(),
-		userID:     userID,
-		name:       name,
-		tokenType:  tokenType,
-		createdAt:  time.Now(),
-		expiresAt:  expirestAt,
-		lastUsedAt: nil,
+		id:        uuid.New(),
+		userID:    userID,
+		name:      name,
+		tokenType: tokenType,
+		createdAt: time.Now(),
+		expiresAt: expirestAt,
 	}, nil
 }
 
-func RestoreAuthToken(id uuid.UUID, userID uuid.UUID, name string, tokenType TokenType, createdAt, expirestAt time.Time, lastUsedAt *time.Time) *AuthToken {
+func RestoreAuthToken(id uuid.UUID, userID uuid.UUID, name string, tokenType TokenType, createdAt, expirestAt time.Time) *AuthToken {
 	return &AuthToken{
-		id:         id,
-		userID:     userID,
-		name:       name,
-		tokenType:  tokenType,
-		createdAt:  createdAt,
-		expiresAt:  expirestAt,
-		lastUsedAt: lastUsedAt,
+		id:        id,
+		userID:    userID,
+		name:      name,
+		tokenType: tokenType,
+		createdAt: createdAt,
+		expiresAt: expirestAt,
 	}
 }
 
@@ -118,20 +115,6 @@ func (a *AuthToken) ExpiresAt() time.Time {
 	return a.expiresAt
 }
 
-func (a *AuthToken) LastUsedAt() *time.Time {
-	return a.lastUsedAt
-}
-
 func (a *AuthToken) IsExpired() bool {
 	return time.Now().After(a.expiresAt)
-}
-
-func (a *AuthToken) Use() error {
-	if a.IsExpired() {
-		return ErrUnauthenticated
-	}
-
-	now := time.Now()
-	a.lastUsedAt = &now
-	return nil
 }

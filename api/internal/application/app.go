@@ -16,7 +16,8 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/cache"
-	rpclogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
+	authToken "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/auth_token"
+	connectlogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
@@ -45,6 +46,8 @@ func New(cfg *config.Config) *App {
 	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
 
 	redis := cache.NewRedisClient(cfg.Redis)
+	token := authToken.NewTokenService(cfg.Crypto)
+	authService := services.NewAuthService(redis, token)
 	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
 	OAuthService := services.NewOauthService(OAuthRegistry, redis)
 
@@ -58,7 +61,7 @@ func New(cfg *config.Config) *App {
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
 	// create interceptors (middleware) for connect handlers
-	interceptor := connect.WithInterceptors(rpclogger.LoggerInterceptor())
+	interceptor := connect.WithInterceptors(connectlogger.LoggerInterceptor())
 
 	// use vangaurd to create rest and rpc compatible connect handlers
 	services := []*vanguard.Service{
