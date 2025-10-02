@@ -47,7 +47,7 @@ func New(cfg *config.Config) *App {
 
 	redis := cache.NewRedisClient(cfg.Redis)
 	token := authToken.NewTokenService(cfg.Crypto)
-	authService := services.NewAuthService(redis, token)
+	authService := services.NewAuthService(redis, token, userRepo)
 	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
 	OAuthService := services.NewOauthService(OAuthRegistry, redis)
 

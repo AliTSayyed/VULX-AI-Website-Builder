@@ -63,3 +63,10 @@ func (r *RedisClient) Delete(ctx context.Context, key string) error {
 	}
 	return nil
 }
+
+func (r *RedisClient) Exists(ctx context.Context, key string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	count := r.Client.Exists(ctx, key).Val()
+	return count > 0, nil
+}
