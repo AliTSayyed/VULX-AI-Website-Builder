@@ -1,7 +1,7 @@
 /*
 * Client Request → Interceptor → Original Handler → Response back through Interceptor → Client
  */
-package logging
+package logger
 
 import (
 	"context"

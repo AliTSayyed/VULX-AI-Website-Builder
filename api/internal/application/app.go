@@ -17,7 +17,8 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/cache"
 	authToken "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/auth_token"
-	connectlogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/auth"
+	connectLogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
@@ -45,23 +46,29 @@ func New(cfg *config.Config) *App {
 	// ddd dependency injection
 	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
 
+	db := postgres.NewDb(cfg.DB)
+	userRepo := postgres.NewUserRepository(db)
+
 	redis := cache.NewRedisClient(cfg.Redis)
+
 	token := authToken.NewTokenService(cfg.Crypto)
 	authService := services.NewAuthService(redis, token, userRepo)
 	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
 	OAuthService := services.NewOauthService(OAuthRegistry, redis)
+	connectAuthAdapter := auth.NewHTTPAuthAdapater(authService)
 
 	temporalService := temporal.New(cfg.Temporal)
 	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
 	temporalService.RegisterWorkers(userWorkflow)
 
-	db := postgres.NewDb(cfg.DB)
-	userRepo := postgres.NewUserRepository(db)
 	userService := services.NewUserService(userRepo, userWorkflow)
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
 	// create interceptors (middleware) for connect handlers
-	interceptor := connect.WithInterceptors(connectlogger.LoggerInterceptor())
+	interceptor := connect.WithInterceptors(
+		connectLogger.LoggerInterceptor(),
+		connectAuthAdapter.HTTPAuthInterceptor(),
+	)
 
 	// use vangaurd to create rest and rpc compatible connect handlers
 	services := []*vanguard.Service{
