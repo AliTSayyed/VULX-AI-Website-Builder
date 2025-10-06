@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,15 +13,28 @@ import (
 )
 
 type User struct {
-	ID   uuid.UUID `db:"id"`
-	Name string    `db:"name"`
-
+	ID        uuid.UUID `db:"id"`
+	FirstName string    `db:"first_name"`
+	LastName  string    `db:"last_name"`
+	Email     string    `db:"email"`
+	Credits   int       `db:"credits"`
+	Is_active bool      `db:"is_active"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+type UserFromProvider struct {
+	UserID       uuid.UUID
+	ProviderName string
+	ProviderID   string
+}
+
 func (u *User) ToDomain() *domain.User {
-	return domain.RestoreUser(u.ID, u.Name)
+	return domain.RestoreUser(u.ID, u.FirstName, u.LastName, u.Email, u.Credits, u.Is_active)
+}
+
+func (u *UserFromProvider) ToDomain() *domain.UserFromProvider {
+	return domain.RestoreUser(u.ID, u.ProviderName, u.ProviderID)
 }
 
 type UserRepository struct {
@@ -34,21 +49,21 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 
 func (u *UserRepository) Create(ctx context.Context, user *domain.User) (*domain.User, error) {
 	query := ` 
-		INSERT INTO users (id, name, created_at, updated_at)
-		VALUES($1, $2, NOW(), NOW())
-		RETURNING id, name, created_at, updated_at
+		INSERT INTO users (id, first_name, last_name, email, created_at, updated_at)
+		VALUES($1, $2, $3, $4, NOW(), NOW())
+		RETURNING id, first_name, last_name, email, created_at, updated_at
 	`
 	var dbUser User
-	err := u.db.QueryRowxContext(ctx, query, user.ID(), user.Name()).StructScan(&dbUser)
+	err := u.db.QueryRowxContext(ctx, query, user.ID(), user.FirstName(), user.LastName(), user.Email()).StructScan(&dbUser)
 	if err != nil {
-		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to create user %s, %w", user.Name(), err))
+		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to create user %s %s (%s), %w", user.FirstName(), user.LastName(), user.Email(), err))
 	}
 	return dbUser.ToDomain(), nil
 }
 
 func (u *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	query := `
-		SELECT id, name, created_at, updated_at
+		SELECT id, first_name, last_name, email, credits, is_active, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -56,7 +71,43 @@ func (u *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	var dbUser User
 	err := u.db.QueryRowxContext(ctx, query, id).StructScan(&dbUser)
 	if err != nil {
-		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to find user %s, %w", id, err))
+		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to find user id %s, %w", id, err))
 	}
 	return dbUser.ToDomain(), nil
+}
+
+func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	query := `
+		SELECT id, first_name, last_name, email, credits, is_active, created_at, updated_at
+		FROM users
+		WHERE email = $1
+	`
+
+	var dbUser User
+	err := u.db.QueryRowxContext(ctx, query, email).StructScan(&dbUser)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.NewError(domain.ErrorTypeNotFound, fmt.Errorf("failed to find user email %s, %w", email, err))
+		}
+		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to find user email %s, %w", email, err))
+	}
+	return dbUser.ToDomain(), nil
+}
+
+func (u *UserRepository) FindProvider(ctx context.Context, userID uuid.UUID) (*domain.UserFromProvider, error) {
+	query := ` 
+		SELECT user_id, provider, provider_user_id
+		FROM user_auth_providers
+		WHERE user_id = $1
+	`
+
+	var dbUserFromProvider UserFromProvider
+	err := u.db.QueryRowxContext(ctx, query, userID).StructScan(&dbUserFromProvider)
+	if err != nil {
+		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to find provider of user id %s, %w", userID, err))
+	}
+	return
+}
+
+func (u *UserRepository) CreateProvider(ctx context.Context, userID uuid.UUID, provider domain.LoginProvider, providerID string) (*domain.UserFromProvider, error) {
 }

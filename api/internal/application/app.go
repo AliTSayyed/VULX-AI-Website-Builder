@@ -43,34 +43,41 @@ type App struct {
 func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
-	// ddd dependency injection
+	// DI
 	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
 
+	// persistance
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
 
 	redis := cache.NewRedisClient(cfg.Redis)
 
+	// workflow orchestration
+	temporalService := temporal.New(cfg.Temporal)
+	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
+	temporalService.RegisterWorkers(userWorkflow)
+
+	// account management
 	token := authToken.NewTokenService(cfg.Crypto)
 	authService := services.NewAuthService(redis, token, userRepo)
 	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
 	OAuthService := services.NewOauthService(OAuthRegistry, redis)
 	connectAuthAdapter := auth.NewHTTPAuthAdapater(authService)
-
-	temporalService := temporal.New(cfg.Temporal)
-	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
-	temporalService.RegisterWorkers(userWorkflow)
-
 	userService := services.NewUserService(userRepo, userWorkflow)
+	accountService := services.NewAccountService(OAuthService, authService, userService)
+
+	// business logic
+
+	// handlers
 	userServiceHandler := handlers.NewUserServiceHandler(userService)
 
-	// create interceptors (middleware) for connect handlers
+	// (middleware)
 	interceptor := connect.WithInterceptors(
 		connectLogger.LoggerInterceptor(),
 		connectAuthAdapter.HTTPAuthInterceptor(),
 	)
 
-	// use vangaurd to create rest and rpc compatible connect handlers
+	// vangaurd creates rest and rpc compatible connect handlers
 	services := []*vanguard.Service{
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
 	}

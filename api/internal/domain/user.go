@@ -26,7 +26,14 @@ type User struct {
 	firstName string
 	lastName  string
 	email     string
+	credits   int
 	isActive  bool
+}
+
+type UserFromProvider struct {
+	userID     uuid.UUID
+	provider   string
+	providerID string
 }
 
 func NewUser(firstName, lastName, email string) (*User, error) {
@@ -51,13 +58,22 @@ func NewUser(firstName, lastName, email string) (*User, error) {
 	}, nil
 }
 
-func RestoreUser(id uuid.UUID, firstName string, lastName string, email string) *User {
+func RestoreUser(id uuid.UUID, firstName string, lastName string, email string, credits int, is_active bool) *User {
 	return &User{
 		id:        id,
 		firstName: firstName,
 		lastName:  lastName,
 		email:     email,
-		isActive:  true,
+		credits:   credits,
+		isActive:  is_active,
+	}
+}
+
+func RestoreUserFromProvider(userID uuid.UUID, providerName LoginProvider, providerID string) {
+	return &UserFromProvider{
+		userID:     userID,
+		provider:   providerName,
+		providerID: providerID,
 	}
 }
 
@@ -89,12 +105,13 @@ func (u *User) Email() string {
 	return u.email
 }
 
-func (u *User) IsActive() bool {
-	return u.isActive
+func (u *User) Credits() int {
+	if u == nil {
+		return 0
+	}
+	return u.credits
 }
 
-type UserWithCredentials struct {
-	userID     uuid.UUID
-	provider   string
-	providerID string
+func (u *User) IsActive() bool {
+	return u.isActive
 }
