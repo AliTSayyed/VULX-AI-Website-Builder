@@ -22,16 +22,16 @@ type AuthResult struct {
 }
 
 type AccountService struct {
-	oauthService OauthService
-	authService  AuthService
-	userService  UserService
+	oauthService *OauthService
+	authService  *AuthService
+	userService  *UserService
 }
 
 func NewAccountService(oauthService *OauthService, authService *AuthService, userService *UserService) *AccountService {
 	return &AccountService{
-		oauthService: *oauthService,
-		authService:  *authService,
-		userService:  *userService,
+		oauthService: oauthService,
+		authService:  authService,
+		userService:  userService,
 	}
 }
 

@@ -67,6 +67,10 @@ func NewOauthService(providerRegistry OauthProviderRegistry, cache Cache) *Oauth
 }
 
 func (o *OauthService) BeginLoginFlow(ctx context.Context, provider domain.LoginProvider, options *OauthOptions) (string, error) {
+	if options == nil {
+		options = &OauthOptions{ExtraParams: make(map[string]string)}
+	}
+
 	// get specific provider
 	oauthprovider, err := o.providerRegistry.Provider(provider.String())
 	if err != nil {
@@ -105,6 +109,10 @@ func (o *OauthService) BeginLoginFlow(ctx context.Context, provider domain.Login
 }
 
 func (o *OauthService) CompleteLoginFlow(ctx context.Context, code string, state string, options *OauthOptions) (*OauthLoginResult, error) {
+	if options == nil {
+		options = &OauthOptions{ExtraParams: make(map[string]string)}
+	}
+
 	// after user allows auhtorization get the code from front end url
 	if code == "" {
 		return nil, domain.NewError(domain.ErrorTypeInvalid, errors.New("code is required"))

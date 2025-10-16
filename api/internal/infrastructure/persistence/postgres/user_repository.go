@@ -24,9 +24,9 @@ type User struct {
 }
 
 type UserFromProvider struct {
-	UserID       uuid.UUID
-	ProviderName string
-	ProviderID   string
+	UserID       uuid.UUID `db:"user_id"`
+	ProviderName string    `db:"provider"`
+	ProviderID   string    `db:"provider_user_id"`
 }
 
 func (u *User) ToDomain() *domain.User {

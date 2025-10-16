@@ -70,11 +70,11 @@ func LoadConfig() (*Config, error) {
 			Google: OauthProvider{
 				getEnvOrDefault("GOOGLE_CLIENT_ID", ""),
 				getEnvOrDefault("GOOGLE_CLIENT_SECRET", ""),
-				getEnvOrDefault("REDIRECT_URL", "localhost:8080/auth/callback"),
+				getEnvOrDefault("REDIRECT_URL", "http://localhost:3000/auth/callback"),
 			},
 		},
 		Redis: Redis{
-			Host: getEnvOrDefault("REDIS_HOST", ""),
+			Host: getEnvOrDefault("REDIS_HOST", "redis"),
 			Name: getEnvOrDefault("REDIS_NAME", "0"),
 		},
 		Crypto: Crypto{

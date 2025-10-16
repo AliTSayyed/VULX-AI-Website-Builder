@@ -39,7 +39,7 @@ func (a *AccountServiceHandler) BeginAccountAuth(ctx context.Context, req *conne
 	}), nil
 }
 
-func (a *AccountServiceHandler) FinnishAccountAuth(ctx context.Context, req *connect.Request[apiv1.FinishAccountAuthRequest]) (*connect.Response[apiv1.FinishAccountAuthResponse], error) {
+func (a *AccountServiceHandler) FinishAccountAuth(ctx context.Context, req *connect.Request[apiv1.FinishAccountAuthRequest]) (*connect.Response[apiv1.FinishAccountAuthResponse], error) {
 	authResult, err := a.accountService.FinishAuth(ctx, req.Msg.GetCode(), req.Msg.GetState())
 	if err != nil {
 		return nil, errorAdapter.ToConnectError(err)
