@@ -102,7 +102,7 @@ func (a *AuthService) Logout(ctx context.Context, token string) error {
 		return nil
 	}
 
-	// black list the hashed token into cache
+	// black list the hashed token into cache (values does not matter just make it 1)
 	hashedToken := hash(token)
 	if err = a.cache.Set(ctx, hashedToken, "1", ttl); err != nil {
 		return domain.WrapError("auth service logout", err)

@@ -132,6 +132,12 @@ func (c *Config) validate() error {
 	if c.Oauth.Google.RedirectURL == "" {
 		return errors.New("REDIRECT_URL cannot be empty")
 	}
+	if c.Redis.Host == "" {
+		return errors.New("REDIS_HOST cannot be empty")
+	}
+	if c.Redis.Name == "" {
+		return errors.New("REDIS_NAME cannot be empty")
+	}
 	if c.Crypto.Seed == "" {
 		return errors.New("JWT_SEED cannot be empty")
 	}

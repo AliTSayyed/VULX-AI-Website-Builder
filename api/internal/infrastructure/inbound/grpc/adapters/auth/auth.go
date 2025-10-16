@@ -28,6 +28,14 @@ type HTTPAuthAdapter struct {
 
 type UserContextKey struct{}
 
+func User(ctx context.Context) (*domain.User, error) {
+	user, ok := ctx.Value(UserContextKey{}).(*domain.User)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthenticated)
+	}
+	return user, nil
+}
+
 func NewHTTPAuthAdapater(authService *services.AuthService) *HTTPAuthAdapter {
 	return &HTTPAuthAdapter{
 		authService: authService,

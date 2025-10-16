@@ -1,5 +1,9 @@
 package temporal
 
+/*
+this is an exmple of a workflow, currently used on a user but probably will be compeltely replaced for the messages service
+*/
+
 import (
 	"context"
 	"fmt"

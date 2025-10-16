@@ -34,7 +34,7 @@ func (u *User) ToDomain() *domain.User {
 }
 
 func (u *UserFromProvider) ToDomain() *domain.UserFromProvider {
-	return domain.RestoreUser(u.ID, u.ProviderName, u.ProviderID)
+	return domain.RestoreUserFromProvider(u.UserID, u.ProviderName, u.ProviderID)
 }
 
 type UserRepository struct {
@@ -106,8 +106,22 @@ func (u *UserRepository) FindProvider(ctx context.Context, userID uuid.UUID) (*d
 	if err != nil {
 		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to find provider of user id %s, %w", userID, err))
 	}
-	return
+
+	return dbUserFromProvider.ToDomain(), nil
 }
 
-func (u *UserRepository) CreateProvider(ctx context.Context, userID uuid.UUID, provider domain.LoginProvider, providerID string) (*domain.UserFromProvider, error) {
+func (u *UserRepository) CreateProvider(ctx context.Context, userID uuid.UUID, providerName string, providerID string) (*domain.UserFromProvider, error) {
+	query := `
+		INSERT INTO user_auth_providers (user_id, provider, provider_user_id, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
+		RETURNING user_id, provider, provider_user_id
+	`
+	var dbUserFromProvider UserFromProvider
+	err := u.db.QueryRowxContext(ctx, query, userID, providerName, providerID).StructScan(&dbUserFromProvider)
+	if err != nil {
+		return nil, domain.NewError(domain.ErrorTypeInternal,
+			fmt.Errorf("failed to insert provider information for user id %s, provider %s, and provider user id %s, error: %w",
+				userID, providerName, providerID, err))
+	}
+	return dbUserFromProvider.ToDomain(), nil
 }

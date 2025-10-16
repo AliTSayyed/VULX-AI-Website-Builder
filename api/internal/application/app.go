@@ -69,7 +69,8 @@ func New(cfg *config.Config) *App {
 	// business logic
 
 	// handlers
-	userServiceHandler := handlers.NewUserServiceHandler(userService)
+	accountServiceHandler := handlers.NewAccountServiceHandler(accountService, connectAuthAdapter)
+	userServiceHandler := handlers.NewUserServiceHandler(userService, connectAuthAdapter)
 
 	// (middleware)
 	interceptor := connect.WithInterceptors(
@@ -79,6 +80,7 @@ func New(cfg *config.Config) *App {
 
 	// vangaurd creates rest and rpc compatible connect handlers
 	services := []*vanguard.Service{
+		vanguard.NewService(apiv1connect.NewAccountServiceHandler(accountServiceHandler, interceptor)),
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
 	}
 
@@ -91,6 +93,8 @@ func New(cfg *config.Config) *App {
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", httpHandlers.Healthz())
 	mux.Handle("/", transcoder)
+
+	// TODO if prod remove this endpoint
 	mux.Handle("/docs/", http.StripPrefix("/docs", httpHandlers.NewHandler()))
 
 	// app stores routes, cors (security), and connections to services
@@ -127,6 +131,7 @@ func (a *App) Start(ctx context.Context) error {
 	case err := <-ch:
 		return err
 	case <-ctx.Done():
+		utils.Logger.Info("API Shutting Down")
 		timeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		// close connection to services
 		defer a.temporal.StopWorkers()

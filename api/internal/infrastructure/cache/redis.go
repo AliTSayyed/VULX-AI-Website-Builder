@@ -11,6 +11,7 @@ import (
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,6 +30,7 @@ func NewRedisClient(cfg config.Redis) *RedisClient {
 		DB:   dbName,
 	})
 
+	utils.Logger.Info("Redis connection successful")
 	return &RedisClient{
 		Client: client,
 	}

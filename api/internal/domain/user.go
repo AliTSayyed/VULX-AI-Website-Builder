@@ -30,10 +30,11 @@ type User struct {
 	isActive  bool
 }
 
-type UserFromProvider struct {
-	userID     uuid.UUID
-	provider   string
-	providerID string
+type Profile struct {
+	firstName string
+	lastName  string
+	email     string
+	credits   int
 }
 
 func NewUser(firstName, lastName, email string) (*User, error) {
@@ -58,6 +59,28 @@ func NewUser(firstName, lastName, email string) (*User, error) {
 	}, nil
 }
 
+func NewProfile(firstName, lastName, email string, credits int) (*Profile, error) {
+	firstName = strings.TrimSpace(firstName)
+	if firstName == "" {
+		return nil, ErrUserFirstNameEmpty
+	}
+
+	if lastName == "" {
+		return nil, ErrUserLastNameEmpty
+	}
+
+	if email == "" {
+		return nil, ErrUserEmailEmpty
+	}
+
+	return &Profile{
+		firstName: firstName,
+		lastName:  lastName,
+		email:     email,
+		credits:   credits,
+	}, nil
+}
+
 func RestoreUser(id uuid.UUID, firstName string, lastName string, email string, credits int, is_active bool) *User {
 	return &User{
 		id:        id,
@@ -66,14 +89,6 @@ func RestoreUser(id uuid.UUID, firstName string, lastName string, email string, 
 		email:     email,
 		credits:   credits,
 		isActive:  is_active,
-	}
-}
-
-func RestoreUserFromProvider(userID uuid.UUID, providerName LoginProvider, providerID string) {
-	return &UserFromProvider{
-		userID:     userID,
-		provider:   providerName,
-		providerID: providerID,
 	}
 }
 
@@ -114,4 +129,32 @@ func (u *User) Credits() int {
 
 func (u *User) IsActive() bool {
 	return u.isActive
+}
+
+func (p *Profile) FirstName() string {
+	if p == nil {
+		return ""
+	}
+	return p.firstName
+}
+
+func (p *Profile) LastName() string {
+	if p == nil {
+		return ""
+	}
+	return p.lastName
+}
+
+func (p *Profile) Email() string {
+	if p == nil {
+		return ""
+	}
+	return p.email
+}
+
+func (p *Profile) Credits() int {
+	if p == nil {
+		return 0
+	}
+	return p.credits
 }

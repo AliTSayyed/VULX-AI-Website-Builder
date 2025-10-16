@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
+	"github.com/google/uuid"
 )
 
 /*
@@ -16,13 +18,7 @@ JWT will handle user login, not storing oauth access tokens
 
 type AuthResult struct {
 	Token   string
-	Profile Profile
-}
-
-type Profile struct {
-	FirstName string
-	LastName  string
-	Email     string
+	Profile *domain.Profile
 }
 
 type AccountService struct {
@@ -61,42 +57,51 @@ func (a *AccountService) FinishAuth(ctx context.Context, code string, state stri
 	}
 
 	// get user from email, if email does not exist then create a new user
-	user, err := a.userService.GetByEmail(ctx, loginResult.Email)
+	var user *domain.User
+	user, err = a.userService.GetByEmail(ctx, loginResult.Email)
+
 	if err != nil {
 		var domainErr *domain.Error
 		if errors.As(err, &domainErr) && domainErr.Type() == domain.ErrorTypeNotFound {
-			// if email does not exist, then create the new user and then create their provider/ provider id as well then do jwt
-			user, err := a.userService.Add(ctx, loginResult.FirstName, loginResult.LastName, loginResult.Email)
+			// if email does not exist, then create the new user and then create their provider
+			user, err = a.userService.Add(ctx, loginResult.FirstName, loginResult.LastName, loginResult.Email)
 			if err != nil {
 				return nil, domain.WrapError("account service finish auth", nil)
 			}
 			// now create the login provider
-			_, err = a.userService.CreateProvider(ctx, user.ID())
+			_, err = a.userService.AddProvider(ctx, user.ID(), loginResult.Credentials.ProviderName, loginResult.Credentials.ProviderUserID)
 			if err != nil {
 				return nil, domain.WrapError("account service finish auth", err)
 			}
+		} else {
+			return nil, domain.WrapError("account service finish auth", err)
 		}
-	}
-
-	// if the email exists, cehck that the loginResult.credentials.ProviderName == Provider for user id
-	// if not then throw error this email already exists, if it does then users exists in our db, just give them a jwt
-	provider := a.userService.GetProvider(ctx, user.ID())
-	if loginResult.Credentials.ProviderName != provider.Name {
-		return nil, domain.WrapError("account service finish auth", err)
+	} else {
+		// if the email exists, cehck that the loginResult.credentials.ProviderName == Provider for user id
+		// if not then throw error this email already exists
+		userWithProvider, err := a.userService.GetProvider(ctx, user.ID())
+		if err != nil {
+			return nil, domain.WrapError("account service finish auth", err)
+		}
+		if loginResult.Credentials.ProviderName != userWithProvider.Provider() {
+			return nil, domain.NewError(domain.ErrorTypeAlreadyExists, fmt.Errorf("this email is already associated with the following provider: %s", userWithProvider.Provider()))
+		}
 	}
 
 	// create a session for them using the auth service jwt
 	token, err := a.authService.CreateSession(ctx, user.ID())
 	if err != nil {
+		return nil, domain.WrapError("account service finish auth", err)
+	}
+
+	profile, err := domain.NewProfile(user.FirstName(), user.LastName(), user.Email(), user.Credits())
+	if err != nil {
+		return nil, domain.WrapError("account service finish auth", err)
 	}
 
 	return &AuthResult{
-		Token: token,
-		Profile: Profile{
-			FirstName: user.FirstName(),
-			LastName:  user.LastName(),
-			Email:     user.Email(),
-		},
+		Token:   token,
+		Profile: profile,
 	}, nil
 }
 
@@ -107,4 +112,18 @@ func (a *AccountService) Logout(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func (a *AccountService) GetProfile(ctx context.Context, userID uuid.UUID) (*domain.Profile, error) {
+	user, err := a.userService.Get(ctx, userID)
+	if err != nil {
+		return nil, domain.WrapError("account service get profile", err)
+	}
+
+	profile, err := domain.NewProfile(user.FirstName(), user.LastName(), user.Email(), user.Credits())
+	if err != nil {
+		return nil, domain.WrapError("account service finish auth", err)
+	}
+
+	return profile, nil
 }

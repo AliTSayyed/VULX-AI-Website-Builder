@@ -16,7 +16,7 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindProvider(ctx context.Context, userID uuid.UUID) (*domain.UserFromProvider, error)
-	CreateProvider(ctx context.Context, userID uuid.UUID, provider domain.LoginProvider, providerID string) (*domain.UserFromProvider, error)
+	CreateProvider(ctx context.Context, userID uuid.UUID, provider string, providerID string) (*domain.UserFromProvider, error)
 }
 
 type UserWorkflowService interface {
@@ -62,26 +62,23 @@ func (u *UserService) Add(ctx context.Context, firstName string, lastName string
 		return nil, domain.WrapError("user service add", err)
 	}
 
-	// TODO get rid of this example call to workflow orchestration
-	// err = u.userWorkflow.StartUserWorkflow(ctx)
-	// if err != nil {
-	// 	return nil, domain.WrapError("user service add", err)
-	// }
-
 	return user, nil
 }
 
-func (u *UserService) Delete(ctx context.Context, id uuid.UUID) error {
-	// TODO update user to have is active false
-	return nil
-}
+func (u *UserService) List(ctx context.Context) {}
 
 func (u *UserService) GetProvider(ctx context.Context, userID uuid.UUID) (*domain.UserFromProvider, error) {
-	return nil, nil
+	userFromProvider, err := u.userRepo.FindProvider(ctx, userID)
+	if err != nil {
+		return nil, domain.WrapError("user service get provider", err)
+	}
+	return userFromProvider, nil
 }
 
-func (u *UserService) AddProvider(ctx context.Context, userID uuid.UUID, provider domain.LoginProvider, providerID string) (*domain.UserFromProvider, error) {
-	// TODO, after a user is created, then insert their provider into the db
-
-	return nil, nil
+func (u *UserService) AddProvider(ctx context.Context, userID uuid.UUID, providerName string, providerID string) (*domain.UserFromProvider, error) {
+	userFromProvider, err := u.userRepo.CreateProvider(ctx, userID, providerName, providerID)
+	if err != nil {
+		return nil, domain.WrapError("user service add provider", err)
+	}
+	return userFromProvider, nil
 }

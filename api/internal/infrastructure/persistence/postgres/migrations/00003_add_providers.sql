@@ -12,5 +12,5 @@ CREATE TABLE user_auth_providers (
 );
 
 -- +migrate Down
-DROP TABLE IF EXISTS user_auth_providers CASCADE
+DROP TABLE IF EXISTS user_auth_providers CASCADE;
  

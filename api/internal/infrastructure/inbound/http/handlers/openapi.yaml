@@ -7,7 +7,111 @@ info:
     description: VULX
     version: 1.0.0
 paths:
+    /api/v1/account/auth/begin:
+        get:
+            tags:
+                - AccountService
+            operationId: AccountService_BeginAccountAuth
+            parameters:
+                - name: loginProvider
+                  in: query
+                  schema:
+                    enum:
+                        - LOGIN_PROVIDER_UNSPECIFIED
+                        - LOGIN_PROVIDER_GOOGLE
+                    type: string
+                    format: enum
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BeginAccountAuthResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/account/auth/finish:
+        post:
+            tags:
+                - AccountService
+            operationId: AccountService_FinishAccountAuth
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FinishAccountAuthRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FinishAccountAuthResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/account/logout:
+        post:
+            tags:
+                - AccountService
+            operationId: AccountService_AccountLogout
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AccountLogoutResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/account/profile:
+        get:
+            tags:
+                - AccountService
+            operationId: AccountService_GetUserProfile
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetUserProfileResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/v1/users:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_ListUsers
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListUsersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         post:
             tags:
                 - UserService
@@ -57,16 +161,45 @@ paths:
                                 $ref: '#/components/schemas/Status'
 components:
     schemas:
+        AccountLogoutResponse:
+            type: object
+            properties: {}
+        BeginAccountAuthResponse:
+            type: object
+            properties:
+                loginUrl:
+                    type: string
         CreateUserRequest:
             type: object
             properties:
-                name:
+                firstName:
+                    type: string
+                lastName:
+                    type: string
+                email:
                     type: string
         CreateUserResponse:
             type: object
             properties:
                 user:
                     $ref: '#/components/schemas/User'
+        FinishAccountAuthRequest:
+            type: object
+            properties:
+                code:
+                    type: string
+                state:
+                    type: string
+        FinishAccountAuthResponse:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/Profile'
+        GetUserProfileResponse:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/Profile'
         GetUserResponse:
             type: object
             properties:
@@ -80,6 +213,22 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListUsersResponse:
+            type: object
+            properties:
+                users:
+                    $ref: '#/components/schemas/Users'
+        Profile:
+            type: object
+            properties:
+                firstName:
+                    type: string
+                lastName:
+                    type: string
+                email:
+                    type: string
+                credits:
+                    type: string
         Status:
             type: object
             properties:
@@ -101,7 +250,23 @@ components:
             properties:
                 id:
                     type: string
-                name:
+                firstName:
                     type: string
+                lastName:
+                    type: string
+                email:
+                    type: string
+                credits:
+                    type: string
+                isActive:
+                    type: boolean
+        Users:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/User'
 tags:
+    - name: AccountService
     - name: UserService
