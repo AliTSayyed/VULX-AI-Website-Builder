@@ -5,3 +5,4 @@ structlog
 langchain
 langchain-openai
 langchain-google-genai
+langchain-anthropic
