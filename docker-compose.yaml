@@ -36,6 +36,20 @@ services:
     networks:
       - vulx
     restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    networks:
+      - vulx
   temporal:
     container_name: "temporal"
     image: temporalio/auto-setup:1.28.1.0
@@ -112,6 +126,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      caddy:
+        condition: service_started
       temporal:
         condition: service_healthy
       temporal-admin-tools:
@@ -139,3 +155,5 @@ volumes:
   pgdata:
   vulx-app-node-modules:
   cache:
+  caddydata:
+  caddyconfig:

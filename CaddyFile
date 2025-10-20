@@ -1,0 +1,8 @@
+{
+    admin off
+}
+
+local.vulx.ai {
+    reverse_proxy api:8080
+    tls internal
+}

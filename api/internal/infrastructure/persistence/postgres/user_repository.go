@@ -51,7 +51,7 @@ func (u *UserRepository) Create(ctx context.Context, user *domain.User) (*domain
 	query := ` 
 		INSERT INTO users (id, first_name, last_name, email, created_at, updated_at)
 		VALUES($1, $2, $3, $4, NOW(), NOW())
-		RETURNING id, first_name, last_name, email, created_at, updated_at
+		RETURNING id, first_name, last_name, email, credits, is_active, created_at, updated_at
 	`
 	var dbUser User
 	err := u.db.QueryRowxContext(ctx, query, user.ID(), user.FirstName(), user.LastName(), user.Email()).StructScan(&dbUser)
