@@ -21,7 +21,7 @@ class AnthropicClient:
             )
         except Exception as e:
             logger.error(
-                "openai_client_initialization_failed",
+                "anthropic_client_initialization_failed",
                 model=settings.openai_model,
                 error_type=type(e).__name__,
                 error=str(e),

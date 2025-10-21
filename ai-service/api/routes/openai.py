@@ -84,7 +84,7 @@ async def query_request(
 
     except Exception as e:
         logger.error(
-            "openai_code_agent_failed",
+            "openai_query_failed",
             error_type=type(e).__name__,
             error=str(e),
             exc_info=True,
