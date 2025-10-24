@@ -99,6 +99,15 @@ paths:
             tags:
                 - UserService
             operationId: UserService_ListUsers
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: string
+                - name: token
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -217,7 +226,13 @@ components:
             type: object
             properties:
                 users:
-                    $ref: '#/components/schemas/Users'
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/User'
+                token:
+                    type: string
+                hasMore:
+                    type: boolean
         Profile:
             type: object
             properties:
@@ -260,13 +275,6 @@ components:
                     type: string
                 isActive:
                     type: boolean
-        Users:
-            type: object
-            properties:
-                users:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/User'
 tags:
     - name: AccountService
     - name: UserService

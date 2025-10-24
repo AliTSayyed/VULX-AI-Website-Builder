@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/user_service.proto.
  */
 export const file_api_v1_user_service: GenFile = /*@__PURE__*/
-  fileDesc("ChlhcGkvdjEvdXNlcl9zZXJ2aWNlLnByb3RvEgZhcGkudjEibAoEVXNlchIKCgJpZBgBIAEoCRISCgpmaXJzdF9uYW1lGAIgASgJEhEKCWxhc3RfbmFtZRgDIAEoCRINCgVlbWFpbBgEIAEoCRIPCgdjcmVkaXRzGAUgASgDEhEKCWlzX2FjdGl2ZRgGIAEoCCIkCgVVc2VycxIbCgV1c2VycxgBIAMoCzIMLmFwaS52MS5Vc2VyIhwKDkdldFVzZXJSZXF1ZXN0EgoKAmlkGAEgASgJIi0KD0dldFVzZXJSZXNwb25zZRIaCgR1c2VyGAEgASgLMgwuYXBpLnYxLlVzZXIiEgoQTGlzdFVzZXJzUmVxdWVzdCIxChFMaXN0VXNlcnNSZXNwb25zZRIcCgV1c2VycxgBIAEoCzINLmFwaS52MS5Vc2VycyJJChFDcmVhdGVVc2VyUmVxdWVzdBISCgpmaXJzdF9uYW1lGAEgASgJEhEKCWxhc3RfbmFtZRgCIAEoCRINCgVlbWFpbBgDIAEoCSIwChJDcmVhdGVVc2VyUmVzcG9uc2USGgoEdXNlchgBIAEoCzIMLmFwaS52MS5Vc2VyMp0CCgtVc2VyU2VydmljZRJWCgdHZXRVc2VyEhYuYXBpLnYxLkdldFVzZXJSZXF1ZXN0GhcuYXBpLnYxLkdldFVzZXJSZXNwb25zZSIagtPkkwIUEhIvYXBpL3YxL3VzZXJzL3tpZH0SVwoJTGlzdFVzZXJzEhguYXBpLnYxLkxpc3RVc2Vyc1JlcXVlc3QaGS5hcGkudjEuTGlzdFVzZXJzUmVzcG9uc2UiFYLT5JMCDxINL2FwaS92MS91c2VycxJdCgpDcmVhdGVVc2VyEhkuYXBpLnYxLkNyZWF0ZVVzZXJSZXF1ZXN0GhouYXBpLnYxLkNyZWF0ZVVzZXJSZXNwb25zZSIYgtPkkwISOgEqIg0vYXBpL3YxL3VzZXJzQsABCgpjb20uYXBpLnYxQhBVc2VyU2VydmljZVByb3RvUAFaZ2dpdGh1Yi5jb20vQWxpVFNheXllZC9WVUxYLUFJLVdlYnNpdGUtQnVpbGRlci9hcGkvaW50ZXJuYWwvaW5mcmFzdHJ1Y3R1cmUvaW5ib3VuZC9ncnBjL2dlbi9hcGkvdjE7YXBpdjGiAgNBWFiqAgZBcGkuVjHKAgZBcGlcVjHiAhJBcGlcVjFcR1BCTWV0YWRhdGHqAgdBcGk6OlYxYgZwcm90bzM", [file_google_api_annotations]);
+  fileDesc("ChlhcGkvdjEvdXNlcl9zZXJ2aWNlLnByb3RvEgZhcGkudjEibAoEVXNlchIKCgJpZBgBIAEoCRISCgpmaXJzdF9uYW1lGAIgASgJEhEKCWxhc3RfbmFtZRgDIAEoCRINCgVlbWFpbBgEIAEoCRIPCgdjcmVkaXRzGAUgASgDEhEKCWlzX2FjdGl2ZRgGIAEoCCIcCg5HZXRVc2VyUmVxdWVzdBIKCgJpZBgBIAEoCSItCg9HZXRVc2VyUmVzcG9uc2USGgoEdXNlchgBIAEoCzIMLmFwaS52MS5Vc2VyIjAKEExpc3RVc2Vyc1JlcXVlc3QSDQoFbGltaXQYASABKAMSDQoFdG9rZW4YAiABKAkiUQoRTGlzdFVzZXJzUmVzcG9uc2USGwoFdXNlcnMYASADKAsyDC5hcGkudjEuVXNlchINCgV0b2tlbhgCIAEoCRIQCghoYXNfbW9yZRgDIAEoCCJJChFDcmVhdGVVc2VyUmVxdWVzdBISCgpmaXJzdF9uYW1lGAEgASgJEhEKCWxhc3RfbmFtZRgCIAEoCRINCgVlbWFpbBgDIAEoCSIwChJDcmVhdGVVc2VyUmVzcG9uc2USGgoEdXNlchgBIAEoCzIMLmFwaS52MS5Vc2VyMp0CCgtVc2VyU2VydmljZRJWCgdHZXRVc2VyEhYuYXBpLnYxLkdldFVzZXJSZXF1ZXN0GhcuYXBpLnYxLkdldFVzZXJSZXNwb25zZSIagtPkkwIUEhIvYXBpL3YxL3VzZXJzL3tpZH0SVwoJTGlzdFVzZXJzEhguYXBpLnYxLkxpc3RVc2Vyc1JlcXVlc3QaGS5hcGkudjEuTGlzdFVzZXJzUmVzcG9uc2UiFYLT5JMCDxINL2FwaS92MS91c2VycxJdCgpDcmVhdGVVc2VyEhkuYXBpLnYxLkNyZWF0ZVVzZXJSZXF1ZXN0GhouYXBpLnYxLkNyZWF0ZVVzZXJSZXNwb25zZSIYgtPkkwISOgEqIg0vYXBpL3YxL3VzZXJzQsABCgpjb20uYXBpLnYxQhBVc2VyU2VydmljZVByb3RvUAFaZ2dpdGh1Yi5jb20vQWxpVFNheXllZC9WVUxYLUFJLVdlYnNpdGUtQnVpbGRlci9hcGkvaW50ZXJuYWwvaW5mcmFzdHJ1Y3R1cmUvaW5ib3VuZC9ncnBjL2dlbi9hcGkvdjE7YXBpdjGiAgNBWFiqAgZBcGkuVjHKAgZBcGlcVjHiAhJBcGlcVjFcR1BCTWV0YWRhdGHqAgdBcGk6OlYxYgZwcm90bzM", [file_google_api_annotations]);
 
 /**
  * @generated from message api.v1.User
@@ -56,23 +56,6 @@ export const UserSchema: GenMessage<User> = /*@__PURE__*/
   messageDesc(file_api_v1_user_service, 0);
 
 /**
- * @generated from message api.v1.Users
- */
-export type Users = Message<"api.v1.Users"> & {
-  /**
-   * @generated from field: repeated api.v1.User users = 1;
-   */
-  users: User[];
-};
-
-/**
- * Describes the message api.v1.Users.
- * Use `create(UsersSchema)` to create a new message.
- */
-export const UsersSchema: GenMessage<Users> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 1);
-
-/**
  * @generated from message api.v1.GetUserRequest
  */
 export type GetUserRequest = Message<"api.v1.GetUserRequest"> & {
@@ -87,7 +70,7 @@ export type GetUserRequest = Message<"api.v1.GetUserRequest"> & {
  * Use `create(GetUserRequestSchema)` to create a new message.
  */
 export const GetUserRequestSchema: GenMessage<GetUserRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 2);
+  messageDesc(file_api_v1_user_service, 1);
 
 /**
  * @generated from message api.v1.GetUserResponse
@@ -104,12 +87,21 @@ export type GetUserResponse = Message<"api.v1.GetUserResponse"> & {
  * Use `create(GetUserResponseSchema)` to create a new message.
  */
 export const GetUserResponseSchema: GenMessage<GetUserResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 3);
+  messageDesc(file_api_v1_user_service, 2);
 
 /**
  * @generated from message api.v1.ListUsersRequest
  */
 export type ListUsersRequest = Message<"api.v1.ListUsersRequest"> & {
+  /**
+   * @generated from field: int64 limit = 1;
+   */
+  limit: bigint;
+
+  /**
+   * @generated from field: string token = 2;
+   */
+  token: string;
 };
 
 /**
@@ -117,16 +109,26 @@ export type ListUsersRequest = Message<"api.v1.ListUsersRequest"> & {
  * Use `create(ListUsersRequestSchema)` to create a new message.
  */
 export const ListUsersRequestSchema: GenMessage<ListUsersRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 4);
+  messageDesc(file_api_v1_user_service, 3);
 
 /**
  * @generated from message api.v1.ListUsersResponse
  */
 export type ListUsersResponse = Message<"api.v1.ListUsersResponse"> & {
   /**
-   * @generated from field: api.v1.Users users = 1;
+   * @generated from field: repeated api.v1.User users = 1;
    */
-  users?: Users;
+  users: User[];
+
+  /**
+   * @generated from field: string token = 2;
+   */
+  token: string;
+
+  /**
+   * @generated from field: bool has_more = 3;
+   */
+  hasMore: boolean;
 };
 
 /**
@@ -134,7 +136,7 @@ export type ListUsersResponse = Message<"api.v1.ListUsersResponse"> & {
  * Use `create(ListUsersResponseSchema)` to create a new message.
  */
 export const ListUsersResponseSchema: GenMessage<ListUsersResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 5);
+  messageDesc(file_api_v1_user_service, 4);
 
 /**
  * @generated from message api.v1.CreateUserRequest
@@ -161,7 +163,7 @@ export type CreateUserRequest = Message<"api.v1.CreateUserRequest"> & {
  * Use `create(CreateUserRequestSchema)` to create a new message.
  */
 export const CreateUserRequestSchema: GenMessage<CreateUserRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 6);
+  messageDesc(file_api_v1_user_service, 5);
 
 /**
  * @generated from message api.v1.CreateUserResponse
@@ -178,7 +180,7 @@ export type CreateUserResponse = Message<"api.v1.CreateUserResponse"> & {
  * Use `create(CreateUserResponseSchema)` to create a new message.
  */
 export const CreateUserResponseSchema: GenMessage<CreateUserResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_user_service, 7);
+  messageDesc(file_api_v1_user_service, 6);
 
 /**
  * @generated from service api.v1.UserService

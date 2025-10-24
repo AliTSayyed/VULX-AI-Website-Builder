@@ -34,15 +34,20 @@ message User {
   bool is_active = 6;
 }
 
-message Users { repeated User users = 1; }
-
 message GetUserRequest { string id = 1; }
 
 message GetUserResponse { User user = 1; }
 
-message ListUsersRequest {}
+message ListUsersRequest {
+  int64 limit = 1;
+  string token = 2;
+}
 
-message ListUsersResponse { Users users = 1; }
+message ListUsersResponse {
+  repeated User users = 1;
+  string token = 2;
+  bool has_more = 3;
+}
 
 message CreateUserRequest {
   string first_name = 1;

@@ -61,6 +61,62 @@ func (u *UserRepository) Create(ctx context.Context, user *domain.User) (*domain
 	return dbUser.ToDomain(), nil
 }
 
+/*
+for pagination we give the most recent to latest created users
+PAST ←─────────────────────────→ FUTURE
+
+	(smaller numbers)         (bigger numbers)
+	(older dates)             (newer dates)
+*/
+func (u *UserRepository) FindAll(ctx context.Context, limit int64, token string) (*domain.Page[*domain.User], error) {
+	createdAt, err := decodeToken(token)
+	if err != nil {
+		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to decode token: %w", err))
+	}
+
+	query := `
+		SELECT id, first_name, last_name, email, credits, is_active, created_at, updated_at	
+		FROM users
+		WHERE ($1::timestamp IS NULL OR created_at < $1)
+		ORDER BY created_at DESC, id DESC
+		LIMIT NULLIF($2, 0)
+	`
+
+	var cursor *time.Time
+	if !createdAt.IsZero() {
+		cursor = &createdAt
+	}
+
+	var dbUsers []*User
+	err = u.db.SelectContext(ctx, &dbUsers, query, cursor, limit+1)
+	if err != nil {
+		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to find users %w", err))
+	}
+
+	var nextToken string
+
+	users := make([]*domain.User, 0, len(dbUsers))
+
+	// query limit + 1, if there are no more values then there is no next
+	// if there are values (in this check), then we need a next and must remove the final value from the slice
+	// since we quried 1 extra item
+	if len(dbUsers) > int(limit) {
+		dbUsers = dbUsers[:limit]
+		nextToken = encodeToken(dbUsers[len(dbUsers)-1].CreatedAt)
+	}
+
+	// use append since dbUsers
+	for _, dbUser := range dbUsers {
+		users = append(users, dbUser.ToDomain())
+	}
+
+	return &domain.Page[*domain.User]{
+		Items:   users,
+		Token:   nextToken,
+		HasMore: nextToken != "",
+	}, nil
+}
+
 func (u *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	query := `
 		SELECT id, first_name, last_name, email, credits, is_active, created_at, updated_at

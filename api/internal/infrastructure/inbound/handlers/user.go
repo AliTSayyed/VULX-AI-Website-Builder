@@ -58,16 +58,32 @@ func (u *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[a
 	}), nil
 }
 
-// func (u *UserServiceHandler) ListUsers(ctx context.Context, req *connect.Request[apiv1.ListUsersRequest]) (*connect.Response[apiv1.ListUsersResponse], error) {
-// 	user, err := authAdapter.User(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (u *UserServiceHandler) ListUsers(ctx context.Context, req *connect.Request[apiv1.ListUsersRequest]) (*connect.Response[apiv1.ListUsersResponse], error) {
+	user, err := authAdapter.User(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-// 	if user.Email() != "alitsayyed@gmail.com" {
-// 		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("only the super user can access this endpoint"))
-// 	}
-// }
+	if user.Email() != "alitsayyed@gmail.com" {
+		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("only the super user can access this endpoint"))
+	}
+
+	page, err := u.userService.List(ctx, req.Msg.GetLimit(), req.Msg.GetToken())
+	if err != nil {
+		return nil, errorAdapter.ToConnectError(err)
+	}
+
+	users := make([]*apiv1.User, len(page.Items))
+	for i, user := range page.Items {
+		users[i] = userToProto(user)
+	}
+
+	return connect.NewResponse(&apiv1.ListUsersResponse{
+		Users:   users,
+		Token:   page.Token,
+		HasMore: page.HasMore,
+	}), nil
+}
 
 func (u *UserServiceHandler) CreateUser(ctx context.Context, req *connect.Request[apiv1.CreateUserRequest]) (*connect.Response[apiv1.CreateUserResponse], error) {
 	user, err := authAdapter.User(ctx)

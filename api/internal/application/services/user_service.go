@@ -7,12 +7,14 @@ import (
 	"context"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"github.com/google/uuid"
 )
 
 // this interface is the "port" to interact with the postgres db
 type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) (*domain.User, error)
+	FindAll(ctx context.Context, limit int64, token string) (*domain.Page[*domain.User], error)
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindProvider(ctx context.Context, userID uuid.UUID) (*domain.UserFromProvider, error)
@@ -65,7 +67,16 @@ func (u *UserService) Add(ctx context.Context, firstName string, lastName string
 	return user, nil
 }
 
-func (u *UserService) List(ctx context.Context) {}
+func (u *UserService) List(ctx context.Context, limit int64, token string) (*domain.Page[*domain.User], error) {
+	limit = utils.Clamp(limit, 10, 100)
+
+	page, err := u.userRepo.FindAll(ctx, limit, token)
+	if err != nil {
+		return nil, domain.WrapError("user service list", err)
+	}
+
+	return page, nil
+}
 
 func (u *UserService) GetProvider(ctx context.Context, userID uuid.UUID) (*domain.UserFromProvider, error) {
 	userFromProvider, err := u.userRepo.FindProvider(ctx, userID)
