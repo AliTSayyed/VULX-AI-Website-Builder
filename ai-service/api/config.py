@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     e2b_api_key: str = ""
     openai_api_key: Optional[SecretStr] = None
     google_api_key: Optional[SecretStr] = None
+    anthropic_api_key: SecretStr = SecretStr("")
 
     # e2b template id
     e2b_sandbox_nextjs_template_id: str = ""
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     # llm models
     openai_model: str = ""
     google_model: str = ""
+    anthropic_model: str = ""
 
     # configure logger
     def configure_logging(self):

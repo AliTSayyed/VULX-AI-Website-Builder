@@ -6,6 +6,7 @@ Available Tools:
 - **read_sandbox_file**: Read the content of a specific file (provide sandbox_id and file path)
 - **write_sandbox_files**: Write one or more files to the sandbox (provide sandbox_id and array of file data with path/content)
 - **execute_sandbox_command**: Run terminal commands in the sandbox (provide sandbox_id and command)
+- After using a tool, check if it succeeded. If the tool returns successfully then do NOT call the same tool again with the same inputs. 
 
 Environment:
 - Pre-configured Next.js 15.3.3 project located at /home/user/
