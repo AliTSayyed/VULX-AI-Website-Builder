@@ -3,6 +3,7 @@ from typing import Annotated
 from services.sandbox_service import SandboxService
 from clients.openai_client import OpenAIClient
 from clients.google_client import GoogleClient
+from clients.anthropic_client import AnthropicClient
 from services.ai_services import CodeAgentService, GeneralAIService
 from services.models.ai_models import AIClient
 from utils.logging import logger
@@ -96,3 +97,41 @@ def get_google_service(google: google_dependency) -> GeneralAIService:
 
 
 google_service_dependency = Annotated[GeneralAIService, Depends(get_google_service)]
+
+
+# create the anthropic client object (holds connection to claude llm)
+@lru_cache()
+def get_anthropic_client() -> AnthropicClient:
+    logger.info("anthropic_client_created")
+    return AnthropicClient()
+
+
+anthropic_dependency = Annotated[AnthropicClient, Depends(get_anthropic_client)]
+
+
+# create the anthropic coding agent
+@lru_cache()
+def get_anthropic_code_agent_service(
+    anthropic: anthropic_dependency, sandbox: sandbox_service_dependency
+) -> CodeAgentService:
+    logger.info("anthropic_code_agent_service_client_created")
+    ai_client = AIClient(anthropic_client=anthropic)
+    return CodeAgentService(llm=ai_client, sandbox_service=sandbox)
+
+
+anthropic_code_agent_service_dependency = Annotated[
+    CodeAgentService, Depends(get_anthropic_code_agent_service)
+]
+
+
+# create general anthropic llm service
+@lru_cache()
+def get_anthropic_service(anthropic: anthropic_dependency) -> GeneralAIService:
+    logger.info("anthropic_general_service_client_created")
+    ai_client = AIClient(anthropic_client=anthropic)
+    return GeneralAIService(llm=ai_client)
+
+
+anthropic_service_dependency = Annotated[
+    GeneralAIService, Depends(get_anthropic_service)
+]

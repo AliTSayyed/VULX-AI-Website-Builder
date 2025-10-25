@@ -12,7 +12,11 @@ class GoogleClient:
     def __init__(self):
         try:
             self.client = ChatGoogleGenerativeAI(
-                google_api_key=settings.google_api_key, model=settings.google_model
+                google_api_key=settings.google_api_key,
+                model=settings.google_model,
+                timeout=60,
+                max_retries=5,
+                temperature=0.1,
             )
 
         except Exception as e:

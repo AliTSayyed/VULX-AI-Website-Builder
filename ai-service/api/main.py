@@ -3,6 +3,7 @@ from api.routes.healthz import router as health_router
 from api.routes.sandbox import router as sandbox_router
 from api.routes.openai import router as openai_router
 from api.routes.google import router as google_router
+from api.routes.anthropic import router as anthropic_router
 from fastapi.middleware.cors import CORSMiddleware
 from api.config import settings
 from utils.logging import LoggingMiddleWare
@@ -24,6 +25,7 @@ api_v1_router.include_router(health_router)
 api_v1_router.include_router(sandbox_router)
 api_v1_router.include_router(openai_router)
 api_v1_router.include_router(google_router)
+api_v1_router.include_router(anthropic_router)
 
 # main server only knows the api v1 router
 ai_service.include_router(api_v1_router)
