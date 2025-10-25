@@ -17,7 +17,7 @@ type Sandbox struct {
 func NewSandbox(url string) (*Sandbox, error) {
 	url = strings.TrimSpace(url)
 	if url == "" {
-		return nil, ErrUserNameEmpty
+		return nil, ErrSandboxUrlEmpty
 	}
 
 	return &Sandbox{

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package api.v1;
+
+enum LoginProvider {
+  LOGIN_PROVIDER_UNSPECIFIED = 0;
+  LOGIN_PROVIDER_GOOGLE = 1;
+}

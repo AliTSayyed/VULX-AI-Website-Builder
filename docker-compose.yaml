@@ -22,6 +22,34 @@ services:
       - "5432:5432"
     networks:
       - vulx
+
+  redis:
+    container_name: "redis"
+    image: redis:6.2-alpine
+    volumes:
+      - cache:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    networks:
+      - vulx
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    networks:
+      - vulx
   temporal:
     container_name: "temporal"
     image: temporalio/auto-setup:1.28.1.0
@@ -96,6 +124,10 @@ services:
     depends_on: # this dependency forces services to start with make file
       sql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      caddy:
+        condition: service_started
       temporal:
         condition: service_healthy
       temporal-admin-tools:
@@ -122,3 +154,6 @@ services:
 volumes:
   pgdata:
   vulx-app-node-modules:
+  cache:
+  caddydata:
+  caddyconfig:

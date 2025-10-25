@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "api/v1/enums.proto";
+import "google/api/annotations.proto";
+
+service AccountService {
+  rpc BeginAccountAuth(BeginAccountAuthRequest)
+      returns (BeginAccountAuthResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/account/auth/begin"
+    };
+  }
+
+  rpc FinishAccountAuth(FinishAccountAuthRequest)
+      returns (FinishAccountAuthResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/account/auth/finish"
+      body : "*"
+    };
+  }
+
+  rpc AccountLogout(AccountLogoutRequest) returns (AccountLogoutResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/account/logout"
+    };
+  }
+
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/account/profile"
+    };
+  }
+}
+
+message BeginAccountAuthRequest { LoginProvider login_provider = 1; }
+
+message BeginAccountAuthResponse { string login_url = 1; }
+
+message FinishAccountAuthRequest {
+  string code = 1;
+  string state = 2;
+}
+
+message FinishAccountAuthResponse { Profile profile = 1; }
+
+message AccountLogoutRequest {}
+
+message AccountLogoutResponse {}
+
+message GetUserProfileRequest {}
+
+message GetUserProfileResponse { Profile profile = 1; }
+
+message Profile {
+  string first_name = 1;
+  string last_name = 2;
+  string email = 3;
+  int64 credits = 4;
+}

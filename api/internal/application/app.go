@@ -15,16 +15,21 @@ import (
 	"connectrpc.com/vanguard"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/application/services"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/config"
-	rpclogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/cache"
+	authToken "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/auth_token"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/auth"
+	connectLogger "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/logger"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/adapters/security"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	httpHandlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/http/handlers"
 	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/oauth"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 )
 
 type App struct {
@@ -32,28 +37,50 @@ type App struct {
 	security *security.SecurityAdapter
 	db       *sqlx.DB
 	temporal *temporal.Temporal
+	redis    *redis.Client
 }
 
 func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
-	// ddd dependency injection
+	// DI
 	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
 
+	// persistance
+	db := postgres.NewDb(cfg.DB)
+	userRepo := postgres.NewUserRepository(db)
+
+	redis := cache.NewRedisClient(cfg.Redis)
+
+	// workflow orchestration
 	temporalService := temporal.New(cfg.Temporal)
 	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
 	temporalService.RegisterWorkers(userWorkflow)
 
-	db := postgres.NewDb(cfg.DB)
-	userRepo := postgres.NewUserRepository(db)
+	// account management
+	token := authToken.NewTokenService(cfg.Crypto)
+	authService := services.NewAuthService(redis, token, userRepo)
+	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
+	OAuthService := services.NewOauthService(OAuthRegistry, redis)
+	connectAuthAdapter := auth.NewHTTPAuthAdapater(authService)
 	userService := services.NewUserService(userRepo, userWorkflow)
-	userServiceHandler := handlers.NewUserServiceHandler(userService)
+	accountService := services.NewAccountService(OAuthService, authService, userService)
 
-	// create interceptors (middleware) for connect handlers
-	interceptor := connect.WithInterceptors(rpclogger.LoggerInterceptor())
+	// business logic
 
-	// use vangaurd to create rest and rpc compatible connect handlers
+	// handlers
+	accountServiceHandler := handlers.NewAccountServiceHandler(accountService, connectAuthAdapter)
+	userServiceHandler := handlers.NewUserServiceHandler(userService, connectAuthAdapter)
+
+	// (middleware)
+	interceptor := connect.WithInterceptors(
+		connectLogger.LoggerInterceptor(),
+		connectAuthAdapter.HTTPAuthInterceptor(),
+	)
+
+	// vangaurd creates rest and rpc compatible connect handlers
 	services := []*vanguard.Service{
+		vanguard.NewService(apiv1connect.NewAccountServiceHandler(accountServiceHandler, interceptor)),
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
 	}
 
@@ -64,8 +91,10 @@ func New(cfg *config.Config) *App {
 
 	// create routes
 	mux := http.NewServeMux()
-	mux.Handle("/healthz", healthz())
+	mux.Handle("/healthz", httpHandlers.Healthz())
 	mux.Handle("/", transcoder)
+
+	// TODO if prod remove this endpoint
 	mux.Handle("/docs/", http.StripPrefix("/docs", httpHandlers.NewHandler()))
 
 	// app stores routes, cors (security), and connections to services
@@ -74,6 +103,7 @@ func New(cfg *config.Config) *App {
 		security: security.NewSecurityAdapter(cfg),
 		db:       db,
 		temporal: temporalService,
+		redis:    redis.Client,
 	}
 
 	return app
@@ -101,11 +131,13 @@ func (a *App) Start(ctx context.Context) error {
 	case err := <-ch:
 		return err
 	case <-ctx.Done():
+		utils.Logger.Info("API Shutting Down")
 		timeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		// close connection to services
 		defer a.temporal.StopWorkers()
 		defer a.temporal.Client.Close()
 		defer a.db.Close()
+		defer a.redis.Close()
 		defer cancel()
 		return server.Shutdown(timeout)
 	}
