@@ -37,6 +37,10 @@ func NewDb(cfg config.Db) *sqlx.DB {
 		panic(fmt.Errorf("failed to connect to database: %w", err))
 	}
 
+	if err = db.Ping(); err != nil {
+		panic(fmt.Errorf("failed to ping database: %w", err))
+	}
+
 	migrations := migrate.EmbedFileSystemMigrationSource{
 		FileSystem: dbMigrations,
 		Root:       "migrations",

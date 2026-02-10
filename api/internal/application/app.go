@@ -32,6 +32,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	readTimeout  = 60 * time.Second
+	writeTimeout = 60 * time.Second
+	IdleTimeout  = 60 * time.Second
+)
+
 type App struct {
 	mux      *http.ServeMux
 	security *security.SecurityAdapter
@@ -111,8 +117,11 @@ func New(cfg *config.Config) *App {
 
 func (a *App) Start(ctx context.Context) error {
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: a.security.SecurityAdapterCors(a.mux),
+		Addr:         ":8080",
+		Handler:      a.security.SecurityAdapterCors(a.mux),
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
+		IdleTimeout:  IdleTimeout,
 	}
 
 	ch := make(chan error, 1)
