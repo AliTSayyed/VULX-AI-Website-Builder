@@ -25,7 +25,7 @@ type UserFromProvider struct {
 	providerID string
 }
 
-func RestoreUserFromProvider(userID uuid.UUID, providerName string, providerID string) *UserFromProvider {
+func RestoreUserFromLoginProvider(userID uuid.UUID, providerName string, providerID string) *UserFromProvider {
 	provider := ParseLoginProvider(providerName)
 	return &UserFromProvider{
 		userID:     userID,

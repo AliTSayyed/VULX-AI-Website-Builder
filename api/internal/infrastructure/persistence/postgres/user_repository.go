@@ -34,7 +34,7 @@ func (u *User) ToDomain() *domain.User {
 }
 
 func (u *UserFromProvider) ToDomain() *domain.UserFromProvider {
-	return domain.RestoreUserFromProvider(u.UserID, u.ProviderName, u.ProviderID)
+	return domain.RestoreUserFromLoginProvider(u.UserID, u.ProviderName, u.ProviderID)
 }
 
 type UserRepository struct {
@@ -56,7 +56,8 @@ func (u *UserRepository) Create(ctx context.Context, user *domain.User) (*domain
 	var dbUser User
 	err := u.db.QueryRowxContext(ctx, query, user.ID(), user.FirstName(), user.LastName(), user.Email()).StructScan(&dbUser)
 	if err != nil {
-		return nil, domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to create user %s %s (%s), %w", user.FirstName(), user.LastName(), user.Email(), err))
+		return nil, domain.NewError(domain.ErrorTypeInternal,
+			fmt.Errorf("failed to create user %s %s (%s), %w", user.FirstName(), user.LastName(), user.Email(), err))
 	}
 	return dbUser.ToDomain(), nil
 }

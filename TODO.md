@@ -47,25 +47,30 @@
   - [ ] Create codebase service for version management
   - [ ] Build codebase handlers for retrieving specific versions
   - [ ] Implement endpoint to download codebase version as ZIP file
+  - [ ] **Store file structure and contents for WebContainer**
+    - Store complete file tree with paths and content
+    - Support efficient retrieval for WebContainer boot
+    - Enable diff generation between versions
 
-#### Sandbox Management
+#### WebContainer State Management
 
-- [ ] **Implement Redis caching for sandbox IDs**
+- [ ] **Implement Redis caching for WebContainer state**
 
   - [ ] Use project ID as Redis key
-  - [ ] Store sandbox ID as value with TTL
+  - [ ] Store serialized file system state as value with TTL
   - [ ] Set TTL to 30-60 minutes (decide between 30min or 1hr)
+  - [ ] Cache file structure for quick WebContainer initialization
 
-- [ ] **Build sandbox lifecycle management**
-  - [ ] **Pre-expiration refresh logic**
-    - When user sends message, check if sandbox TTL < 5 minutes remaining
-    - If expiring soon, create new sandbox and swap sandbox ID in Redis
-    - Update project with new sandbox ID before old one expires
-    - This provides seamless experience for active users
+- [ ] **Build WebContainer lifecycle management**
+  - [ ] **Handle state persistence**
+    - Save WebContainer file system state to Redis on updates
+    - Load cached state when user returns to project
+    - Invalidate cache when new code version is created
   - [ ] **Cold start handling**
-    - When user opens project after long period (sandbox expired)
-    - Create new sandbox and inform user to wait for activation
-    - Display loading state during sandbox creation (normal UX, same as Bolt)
+    - When user opens project after cache expiration
+    - Load latest codebase version from PostgreSQL
+    - Initialize WebContainer with fresh file system
+    - Display loading state during initialization
 
 #### Workflow Orchestration
 
@@ -73,9 +78,9 @@
   - [ ] Decide if Temporal is only for POST message requests or broader use cases
   - [ ] Implement workflow for message processing:
     - Credit deduction
-    - Sandbox creation/retrieval
     - AI service call
     - Codebase version creation
+    - WebContainer state update
     - Response streaming
   - [ ] Handle retries and error cases in workflow
   - [ ] Define workflow timeout and compensation logic
@@ -115,17 +120,27 @@
     - Display AI responses with streaming (SSE connection)
     - Show user messages and AI responses in conversation format
 
-  - [ ] **Right panel - Sandbox view**
-    - Default view: Live preview of sandbox (iframe or similar)
-    - Toggle button to switch between "Preview" and "Code" view
-    - **Preview view**: Always shows latest version only
-      - Display notice: "Preview shows latest version only"
-    - **Code view**: Show code files with syntax highlighting
-      - Read-only code display (user cannot edit)
-      - Version selector dropdown to switch between code versions
-      - Each version switch makes separate API request (don't preload all versions)
+  - [ ] **Right panel - WebContainer IDE**
+    - **Default view: Live preview**
+      - Render WebContainer preview in iframe
+      - Auto-refresh when new code version is generated
+      - Display loading state during WebContainer boot
+    - **Toggle between "Preview" and "Code" views**
+    - **Code view features:**
+      - File tree explorer (collapsible folders)
+      - Monaco editor for code editing (syntax highlighting, autocomplete)
+      - User can edit files and see changes in real-time
+      - Save button to persist manual edits as new version
+      - Version selector dropdown to switch between versions
+        - Each version switch loads different file structure from API
+        - Don't preload all versions (fetch on demand)
       - Display current version number and timestamp
     - **Download button**: Download current version as ZIP file
+    - **WebContainer integration:**
+      - Initialize WebContainer on project load
+      - Mount file system from API/cache
+      - Handle hot module reload for edits
+      - Terminal output display (optional feature)
 
 #### State Management
 
@@ -133,6 +148,10 @@
 - [ ] Implement optimistic updates for message sending
 - [ ] Handle SSE connection state (connecting, open, error, closed)
 - [ ] Manage project selection and active project state
+- [ ] **WebContainer state management**
+  - Track WebContainer boot status
+  - Sync file system changes with backend
+  - Handle WebContainer errors and recovery
 
 ### AI-Service (FastAPI)
 
@@ -145,7 +164,11 @@
   - [ ] Test Anthropic Claude code agent thoroughly
   - [ ] Normalize responses across different models
   - [ ] Handle model-specific quirks and limitations
-  - [ ] Need to create message length limit for sending requests to llms
+  - [ ] Create message length limit for sending requests to LLMs
+  - [ ] **Return structured file outputs**
+    - Return complete file tree structure (paths + content)
+    - Ensure consistent format across all AI models
+    - Include metadata (file types, line counts, etc.)
 
 - [ ] **Error handling and retry logic**
   - [ ] Define error response format for Golang API
@@ -160,7 +183,7 @@
 
 ## Backlog / Future Tasks
 
-- [ ] Add tests for critical paths (auth, message streaming, sandbox lifecycle)
+- [ ] Add tests for critical paths (auth, message streaming, WebContainer lifecycle)
 - [ ] Set up monitoring and alerting for production
 - [ ] Implement rate limiting per user tier
 - [ ] Add analytics for tracking usage patterns
@@ -168,11 +191,17 @@
 - [ ] Consider Redis Cluster for high availability
 - [ ] Add WebSocket fallback for SSE if needed
 - [ ] Implement collaborative features (share projects)
+- [ ] Add terminal emulator in WebContainer view
+- [ ] Support npm install and package management in WebContainer
+- [ ] Implement file upload for custom assets
+- [ ] Add syntax error detection before WebContainer execution
 
 ## Questions to Resolve
 
-- **Sandbox TTL**: Should sandboxes last 30 minutes or 1 hour?
+- **WebContainer state TTL**: Should cached state last 30 minutes or 1 hour?
 - **Temporal scope**: Is Temporal only for message POST requests, or should it orchestrate other workflows too?
 - **Version history limits**: Should we limit how many versions we keep per project? Or keep all versions forever?
 - **Error UX**: How should we display errors to users when AI service fails? Retry automatically or let user retry manually?
+- **Manual edits**: When user edits code in WebContainer, should we auto-save versions or require explicit save action?
+- **WebContainer persistence**: Should user edits in WebContainer persist if they refresh the page, or only saved versions persist?
 - **Preview refresh**: Should preview auto-refresh when new code version is created, or require manual refresh?

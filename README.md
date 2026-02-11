@@ -1,11 +1,11 @@
 # AI Frontend Code Generator SaaS
 
-A SaaS platform that enables users to generate frontend code through AI interaction. Users can ask AI to create frontend components and receive both the generated code and a live visual preview, similar to Bolt and Lovable.
+A SaaS platform that enables users to generate frontend code through AI interaction. Users can ask AI to create frontend components and receive both the generated code and an interactive web-based IDE to view and modify their code, similar to Bolt and Lovable.
 
 ## Features (In Progress)
 
 - **Multiple AI Models**: Choose between OpenAI, Google Gemini, or Anthropic Claude Sonnet
-- **Live Sandbox Preview**: See your generated code running in real-time
+- **Web-Based IDE**: Interactive code editor powered by WebContainers for viewing and editing generated code
 - **Version History**: Track all iterations of your code generations
 - **OAuth Authentication**: Secure OAuth login with JWT sessions
 - **Credit-Based System**: Pay-per-use model for AI generations
@@ -16,9 +16,9 @@ A SaaS platform that enables users to generate frontend code through AI interact
 ### Backend
 
 - **Golang** - Main API with hexagonal DDD architecture
-- **FastAPI (Python)** - AI service for LangChain agents and E2B sandboxes
+- **FastAPI (Python)** - AI service for LangChain agents
 - **PostgreSQL** - Primary database
-- **Redis** - Session storage and sandbox caching
+- **Redis** - Session storage and WebContainer state caching
 - **Temporal** - Workflow orchestration
 - **Protocol Buffers** - Type-safe communication contracts
 - **Connect RPC + Vanguard** - Dual gRPC/REST protocol support
@@ -28,12 +28,12 @@ A SaaS platform that enables users to generate frontend code through AI interact
 - **Next.js** - React framework
 - **Shadcn UI** - Component library
 - **React Query** - Data fetching and state management
+- **WebContainers** - Browser-based Node.js runtime for live code execution
 
 ### Infrastructure
 
 - **Docker & Docker Compose** - Containerization
 - **Caddy** - Reverse proxy with HTTPS
-- **E2B** - Sandboxed code execution environments
 - **Buf** - Protocol buffer code generation
 
 ## Architecture
@@ -61,6 +61,8 @@ Install the following tools:
 git clone <repository-url>
 cd <project-directory>
 ```
+
+````
 
 ### 2. Set up environment variables
 
@@ -95,7 +97,7 @@ This will start:
 
 ### 5. Access the application
 
-- **Frontend**: https://localhost (via Caddy, add local.vulx.ai to etc/hosts on 127.0.0.1)
+- **Frontend**: https://localhost (via Caddy, add local.vulx.ai to /etc/hosts pointing to 127.0.0.1)
 - **API**: https://localhost/api
 - **Temporal UI**: http://localhost:8080
 
@@ -104,3 +106,4 @@ This will start:
 Proprietary - All Rights Reserved
 
 Copyright (c) 2025. This code is private and confidential.
+````

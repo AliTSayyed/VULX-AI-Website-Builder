@@ -52,9 +52,10 @@ func New(cfg *config.Config) *App {
 	// DI
 	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
 
-	// persistance
+	// persistence
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
+	userKeyRepo := postgres.NewUserApiKeyRepository(db)
 
 	redis := cache.NewRedisClient(cfg.Redis)
 
@@ -71,6 +72,7 @@ func New(cfg *config.Config) *App {
 	connectAuthAdapter := auth.NewHTTPAuthAdapater(authService)
 	userService := services.NewUserService(userRepo, userWorkflow)
 	accountService := services.NewAccountService(OAuthService, authService, userService)
+	userKeyService := services.NewUserKeyService(userKeyRepo)
 
 	// business logic
 
