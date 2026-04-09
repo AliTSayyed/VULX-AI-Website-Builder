@@ -8,7 +8,6 @@ A SaaS platform that enables users to generate frontend code through AI interact
 - **Web-Based IDE**: Interactive code editor powered by WebContainers for viewing and editing generated code
 - **Version History**: Track all iterations of your code generations
 - **OAuth Authentication**: Secure OAuth login with JWT sessions
-- **Credit-Based System**: Pay-per-use model for AI generations
 - **Code Export**: Download any version of your generated code as a ZIP file
 
 ## Tech Stack
@@ -105,5 +104,5 @@ This will start:
 
 Proprietary - All Rights Reserved
 
-Copyright (c) 2025. This code is private and confidential.
+Copyright (c) 2025. This code is not meant for reuse.
 ````
