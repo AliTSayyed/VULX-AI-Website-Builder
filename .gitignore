@@ -2,3 +2,6 @@
 .env
 /app-next-legacy
 /app-vite-legacy
+CLAUDE.md
+AGENTS.md
+
