@@ -105,7 +105,7 @@ services:
       context: ai-service
       dockerfile: Dockerfile.dev # need to change this when in prod
     env_file:
-      - ai-service/.env
+      - ../AI-Website-Builder-Secrets/.ai-service-env
     ports:
       - "9999:9999"
     networks:
@@ -116,7 +116,7 @@ services:
       context: api
       dockerfile: Dockerfile
     env_file:
-      - api/.env
+      - ../AI-Website-Builder-Secrets/.api-env
     ports:
       - "8080:8080"
     networks:
