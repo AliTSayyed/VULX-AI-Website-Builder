@@ -2,6 +2,9 @@
 
 Companion to `logged_out_screen.md`. Verified against the code on `feature/UI`.
 
+**Task breakdown:** `.planning/tasks/Frontend/auth-flow/` (nine tasks, sequential).
+**Backend side:** `.planning/Backend/auth-flow.md`.
+
 ## 1. The round trip
 
 ```
@@ -94,7 +97,7 @@ for _, cookie := range cookies {
 The session survives only if `jwt` is the last cookie in the header. Less likely to bite on a
 dedicated subdomain than on shared `localhost`, but any second cookie scoped to `.vulx.ai` — a
 future theme preference, an analytics cookie, anything on a sibling subdomain — reintroduces it as
-random logouts. Fix:
+random logouts. Fixed by `tasks/Backend/auth-flow/task1.md`:
 
 ```go
 for _, cookie := range cookies {
@@ -252,15 +255,16 @@ Land the backend fix and the latch in the same change, or you will chase a phant
 trip — but it is a different generated type from `GetUserProfileResponse` and needs a deliberate
 unwrap to the inner `Profile`. Invalidate first; optimise only if the flash is visible.
 
-## 5. Other backend fixes worth folding in
+## 5. Backend fixes
 
-- **`grpc/adapters/auth/interceptor.go:26`** — `connect.NewError(connect.CodeInvalidArgument, err)`
-  discards the code `ToConnectError` just derived, for authenticated requests only. Return `err`
-  unchanged. Not blocking (logged-out detection uses the unauthenticated path, which is correct)
-  but it makes every future authenticated error misleading.
-- **`oauth_service.go:125`** — delete `provider:<state>` after a successful exchange so a
-  `code`/`state` pair cannot be replayed within its 10-minute TTL (ARCHITECTURE §11 #5). Pairs
-  with §4.3.
+**Moved.** The Go-side defects that touch this flow now live in `.planning/Backend/auth-flow.md`,
+broken into `.planning/tasks/Backend/auth-flow/task{1,2,3}.md`:
+
+| Task | Fix | Relation to this document |
+| --- | --- | --- |
+| 1 | `GetJWTCookie` keeps only the last cookie | the defect described in §2.3 above |
+| 2 | Interceptor flattens authenticated error codes to `CodeInvalidArgument` | not blocking; §1.2 of the backend doc explains why logged-out detection still works |
+| 3 | OAuth state is never deleted, so it is replayable for 10 minutes | **ordering constraint** — pairs with the `useRef` latch in §4.3 |
 
 ## 6. Frontend transport
 
