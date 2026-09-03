@@ -6,7 +6,7 @@
 import { useMemo } from "react";
 import { createClient, type Client } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import type { GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenService, GenServiceMethods } from "@bufbuild/protobuf/codegenv2";
 
 const LOCAL_API_URL = "https://local.api.vulx.ai";
 
@@ -18,7 +18,7 @@ const getBaseUrl = (): string => {
 // API so requests are readable in the Network tab when debugging
 const binaryFormat = getBaseUrl() === LOCAL_API_URL ? false : true;
 
-export function useServiceClient<T extends GenService<any>>(
+export function useServiceClient<T extends GenService<GenServiceMethods>>(
   service: T,
 ): Client<T> {
   const transport = useMemo(
