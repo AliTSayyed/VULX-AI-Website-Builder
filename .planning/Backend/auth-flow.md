@@ -39,30 +39,28 @@ unmodified context, and `GetUserProfile` then returns `authAdapter.User`'s error
 anonymous `GetUserProfile` reaches the browser as a clean `unauthenticated`, **which is the entire
 basis of the frontend session gate**, and it works before any fix below lands.
 
-## 2. Defects to fix
+## 2. Defects — all fixed
 
-Three, all pre-existing, all listed in `ARCHITECTURE.md` §11. Broken out into
-`.planning/tasks/Backend/auth-flow/`.
+Three, all pre-existing, all listed in `ARCHITECTURE.md` §11. Tasks now in
+`.planning/tasks/Backend/auth-flow/completed/`.
 
-| # | Task | Defect | Blocking? |
-| --- | --- | --- | --- |
-| 1 | `task1.md` | `GetJWTCookie` keeps only the **last** cookie in the header (§11 #4) | Not today, but it is a live regression risk |
-| 2 | `task2.md` | Interceptor flattens every authenticated error to `CodeInvalidArgument` (§11 #3) | No — but it makes logout/profile failures unreadable |
-| 3 | `task3.md` | OAuth state is replayable for its full 10-minute TTL (§11 #5) | No — and it has a **hard ordering constraint**, see below |
+| # | Task | Defect | Blocking? | Status |
+| --- | --- | --- | --- | --- |
+| 1 | `task1.md` | `GetJWTCookie` kept only the **last** cookie in the header (§11 #4) | Not then, but was a live regression risk | ✅ landed |
+| 2 | `task2.md` | Interceptor flattened every authenticated error to `CodeInvalidArgument` (§11 #3) | No — but made logout/profile failures unreadable | ✅ landed — as a client-caused-vs-server-caused split, not a blanket pass-through (avoids leaking infra error detail to the browser) |
+| 3 | `task3.md` | OAuth state was replayable for its full 10-minute TTL (§11 #5) | No — and had a **hard ordering constraint**, see below | ✅ landed, after the frontend latch |
 
-## 3. The one cross-cutting constraint
+## 3. The one cross-cutting constraint — satisfied
 
-**Backend task 3 and frontend task 8 must land together, or in that order.**
+**Backend task 3 landed after frontend task 8**, in the required order.
 
-Today OAuth state survives its exchange, so React 19 StrictMode's double-fired effect calls
-`FinishAccountAuth` twice and *both* calls succeed. The moment the Redis delete lands, the second
-call fails on a consumed state and paints an error over a login that actually worked.
+Before the fix, OAuth state survived its exchange, so React 19 StrictMode's double-fired effect
+called `FinishAccountAuth` twice and *both* calls succeeded. Once the Redis delete landed, a second
+call would fail on a consumed state — but the frontend callback route
+(`tasks/Frontend/auth-flow/completed/task8.md`) already latches its effect with a `useRef`, so the
+second StrictMode invocation never reaches `FinishAccountAuth` at all. No phantom bug materialized.
 
-The frontend callback route (`tasks/Frontend/auth-flow/task8.md`) latches its effect with a `useRef`
-for exactly this reason. If you land backend task 3 before that latch exists, you will spend an
-afternoon chasing a phantom bug in a flow that is working.
-
-Everything else on the backend is independent of the frontend order.
+Everything else on the backend was independent of the frontend order.
 
 ## 4. Explicitly out of scope
 

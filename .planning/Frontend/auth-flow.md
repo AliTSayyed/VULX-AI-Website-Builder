@@ -2,8 +2,8 @@
 
 Companion to `logged_out_screen.md`. Verified against the code on `feature/UI`.
 
-**Task breakdown:** `.planning/tasks/Frontend/auth-flow/` (nine tasks, sequential).
-**Backend side:** `.planning/Backend/auth-flow.md`.
+**Task breakdown:** `.planning/tasks/Frontend/auth-flow/completed/` (all nine tasks landed).
+**Backend side:** `.planning/Backend/auth-flow.md` — all three tasks also landed.
 
 ## 1. The round trip
 
@@ -80,24 +80,14 @@ For contrast, and so nobody re-derives this later:
   literal hostname `localhost`, not a hosts-file alias. Google also refuses to register an
   `http://` redirect URI on a non-localhost host.
 
-### 2.3 The cookie parse bug is still real
+### 2.3 The cookie parse bug — fixed
 
-`GetJWTCookie` (`auth.go:70-76`):
-
-```go
-for _, cookie := range cookies {
-    if cookie.Name == apiCookieName {
-        token = cookie.Value
-    } else {
-        token = ""          // ← wipes the token we just found
-    }
-}
-```
-
-The session survives only if `jwt` is the last cookie in the header. Less likely to bite on a
-dedicated subdomain than on shared `localhost`, but any second cookie scoped to `.vulx.ai` — a
-future theme preference, an analytics cookie, anything on a sibling subdomain — reintroduces it as
-random logouts. Fixed by `tasks/Backend/auth-flow/task1.md`:
+`GetJWTCookie` used to reset `token` to `""` on every non-`jwt` cookie in the header, so the session
+survived only if `jwt` happened to be parsed last. Less likely to bite on a dedicated subdomain than
+on shared `localhost`, but any second cookie scoped to `.vulx.ai` — a theme preference, an analytics
+cookie, anything on a sibling subdomain — would have reintroduced it as random logouts. Fixed by
+`tasks/Backend/auth-flow/task1.md` (now in `completed/`) — the loop returns on the first match
+instead of continuing:
 
 ```go
 for _, cookie := range cookies {
@@ -230,10 +220,10 @@ in a small inner component and wrap it.
 
 ### 4.3 The StrictMode double-fire trap
 
-React 19 StrictMode invokes effects twice in development. Today that is harmless — OAuth state is
-replayable (§5 below), so both `FinishAccountAuth` calls succeed. **Once the Redis delete lands,
-the second call fails on a consumed state and paints an error over a login that actually
-succeeded.**
+React 19 StrictMode invokes effects twice in development. The `useRef` latch below landed alongside
+the backend's Redis-delete fix (`tasks/Backend/auth-flow/task3.md`), in the correct order — the
+latch first, so the second StrictMode-fired effect never reaches `FinishAccountAuth` at all and
+never has the chance to fail on an already-consumed `state`.
 
 ```ts
 const fired = useRef(false);
@@ -243,8 +233,6 @@ useEffect(() => {
   // … FinishAccountAuth
 }, []);
 ```
-
-Land the backend fix and the latch in the same change, or you will chase a phantom bug.
 
 ### 4.4 On success
 
@@ -257,19 +245,19 @@ unwrap to the inner `Profile`. Invalidate first; optimise only if the flash is v
 
 ## 5. Backend fixes
 
-**Moved.** The Go-side defects that touch this flow now live in `.planning/Backend/auth-flow.md`,
-broken into `.planning/tasks/Backend/auth-flow/task{1,2,3}.md`:
+All three landed — `.planning/tasks/Backend/auth-flow/` is now `completed/task{1,2,3}.md`. Detail in
+`.planning/Backend/auth-flow.md`.
 
-| Task | Fix | Relation to this document |
-| --- | --- | --- |
-| 1 | `GetJWTCookie` keeps only the last cookie | the defect described in §2.3 above |
-| 2 | Interceptor flattens authenticated error codes to `CodeInvalidArgument` | not blocking; §1.2 of the backend doc explains why logged-out detection still works |
-| 3 | OAuth state is never deleted, so it is replayable for 10 minutes | **ordering constraint** — pairs with the `useRef` latch in §4.3 |
+| Task | Fix | Relation to this document | Status |
+| --- | --- | --- | --- |
+| 1 | `GetJWTCookie` keeps only the last cookie | the defect described in §2.3 above | ✅ landed |
+| 2 | Interceptor flattened authenticated error codes to `CodeInvalidArgument` | not blocking; §1.2 of the backend doc explains why logged-out detection still worked | ✅ landed — implemented as a client-caused-vs-server-caused split rather than passing every code through unwrapped, so infrastructure errors (Redis/DB failures) still don't leak their raw message to the browser |
+| 3 | OAuth state was never deleted, so it was replayable for 10 minutes | **ordering constraint** — pairs with the `useRef` latch in §4.3 | ✅ landed, latch-first as required |
 
-## 6. Frontend transport
+## 6. Frontend transport — fixed
 
-`useServiceClient.ts` hardcodes the base URL and passes no credentials, so the browser will
-neither store nor send the cookie:
+`useServiceClient.ts` used to hardcode `http://localhost:8080` and pass no credentials, so the
+browser would neither store nor send the cookie. Fixed by `tasks/Frontend/auth-flow/task2.md`:
 
 ```ts
 const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "https://local.api.vulx.ai";

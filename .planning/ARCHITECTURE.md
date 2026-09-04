@@ -46,19 +46,19 @@ each other by service name (`sql`, `redis`, `temporal`, `ai-service`, `api`).
 ```
 browser
    │
-   ├──────────────► app        :3000   Next.js dev server
-   │                  │
-   │                  │ Connect RPC (JSON over HTTP)
-   │                  ▼
-   └──────────────► api        :8080   Go — Connect + Vanguard
-       (or via caddy :443,              │
-        local.vulx.ai, internal TLS)    │
-                                        ├──► sql       :5432   Postgres 16 (app data + Temporal)
-                                        ├──► redis     :6379   JWT blacklist, OAuth state
-                                        ├──► temporal  :7233   workflow engine
-                                        └──► ai-service:9999   FastAPI
-                                                     │
-                                                     └──► E2B cloud ──► Next.js sandbox :3000
+   ├──► caddy :443 (local.app.vulx.ai, tls internal) ──► app :3000   Next.js dev server
+   │                                                        │
+   │                                                        │ Connect RPC (JSON over HTTP,
+   │                                                        │ credentials: include)
+   │                                                        ▼
+   └──► caddy :443 (local.api.vulx.ai, tls internal) ──► api :8080   Go — Connect + Vanguard
+                                                            │
+                                                            ├──► sql       :5432   Postgres 16 (app data + Temporal)
+                                                            ├──► redis     :6379   JWT blacklist, OAuth state
+                                                            ├──► temporal  :7233   workflow engine
+                                                            └──► ai-service:9999   FastAPI
+                                                                         │
+                                                                         └──► E2B cloud ──► Next.js sandbox :3000
 ```
 
 | Service | Port | Purpose |
@@ -70,12 +70,18 @@ browser
 | `redis` | 6379 | Not published to the host; reachable only inside the network |
 | `temporal` | 7233 | `auto-setup` image; health-checked so the API cannot race namespace creation |
 | `temporal-ui` | 8081 | Mapped from the container's 8080 (the README's "8080" is wrong) |
-| `caddy` | 80/443 | `local.vulx.ai` → `api:8080` with `tls internal` |
+| `caddy` | 80/443 | `local.api.vulx.ai` → `api:8080` and `local.app.vulx.ai` → `app:3000`, both `tls internal` |
 
-**Caddy's actual job** is narrow: it terminates HTTPS for the API only, so the browser will accept
-`Secure` JWT cookies during local development. It does not proxy the frontend and does not serve
-documentation. Reaching the API through it requires `127.0.0.1 local.vulx.ai` in `/etc/hosts` and
-trusting Caddy's local CA.
+**Caddy's job** is to terminate HTTPS for both hosts, so the browser will accept `Secure` JWT
+cookies during local development and the app/api hop stays same-*site* (`local.app.vulx.ai` →
+`local.api.vulx.ai`) even though it's cross-*origin* — required for `credentials: "include"` to
+carry the cookie. Caddy also transparently proxies the frontend's HMR WebSocket upgrade. Reaching
+either host requires `127.0.0.1 local.api.vulx.ai` and `127.0.0.1 local.app.vulx.ai` in
+`/etc/hosts`, and trusting Caddy's local CA (`make trust` / `make trust-rm`).
+
+`docker compose run` (used by the `app` and `api` make targets) does not attach a container's
+network alias by default — only `--use-aliases` does — so both targets pass it explicitly. Without
+it, `reverse_proxy app:3000` / `api:8080` cannot resolve and Caddy 502s.
 
 **Startup ordering** is enforced through `depends_on` with health conditions: Postgres and Redis
 must report healthy, and Temporal must answer `tctl namespace describe`, before `api` starts. The
@@ -449,20 +455,37 @@ Two interceptors wrap every RPC, in this order: request logging, then auth.
 
 ## 9. Frontend 🟡
 
-Scaffolding with a working RPC transport. Almost none of the product UI exists.
+The auth surface is ✅ **built** end to end. Everything past sign-in (dashboard, editor, preview) is
+still ⛔.
 
-**What is real:** `src/hooks/services/useServiceClient.ts` builds a memoised Connect transport and
-returns a typed client for any generated service; `useUserService.ts` is the one-line wrapper
-pattern to copy. `src/components/ui/` is a full shadcn install — treat it as vendored.
+**Auth is real, not scaffolding.** `src/hooks/services/useServiceClient.ts` builds a memoised
+Connect transport from `NEXT_PUBLIC_API_URL` (falling back to `https://local.api.vulx.ai`), sends
+JSON (`useBinaryFormat` is derived from that same base-URL check — binary once a non-local API URL
+is configured), and every request carries `credentials: "include"` so the `.vulx.ai` session cookie
+round-trips across the `app` → `api` origin hop. `useAccountService.ts` mirrors the existing
+`useUserService.ts` one-line wrapper pattern.
 
-**What is not:** `src/app/page.tsx` is a stale demo (see §11). There is no `/auth/callback` route,
-no login UI, no dashboard, no editor, no preview pane, and no protected-route logic.
-`@tanstack/react-query` is installed but not imported anywhere — there is no `QueryClientProvider`
-in `layout.tsx`, so descriptions of "React Query cache" are aspirational.
+`src/hooks/useSession.ts` is the single source of truth for "am I logged in": it calls
+`GetUserProfile` through React Query (`queryKey: ["profile"]`), treats a `Code.Unauthenticated`
+rejection as a normal `null` result rather than an error, and exposes a derived
+`"loading" | "authed" | "anon"` status. `src/app/page.tsx` gates on that status alone — splash
+(plain black screen, deliberately not a spinner) while loading, `LoggedInScreen` when authed,
+`LoggedOutScreen` otherwise. `src/app/auth/callback/page.tsx` completes the round trip:
+`FinishAccountAuth` on the `code`/`state` pair Google redirects back with, guarded by a `useRef`
+latch against React 19 StrictMode's double-invoked effects, then `router.replace("/")`.
 
-The transport hardcodes `http://localhost:8080` and selects JSON over binary from that same
-constant. It sends no credentials option, which will need attention when cookie-authenticated
-calls are wired up.
+`QueryClientProvider` (`src/app/providers.tsx`, a per-session client via lazy `useState`, not a
+module-level singleton — avoids leaking one user's cached profile to another across SSR requests)
+and `<Toaster theme="dark" />` are mounted in `layout.tsx`. `@tanstack/react-query` is no longer
+just an installed-but-unused dependency.
+
+`src/components/ui/` is a full shadcn install — treat it as vendored, restyle at the call site only.
+`src/components/session/` is new, holding post-login UI (`logged-in-screen.tsx`) as distinct from
+`src/components/landing/`.
+
+**What is still not built:** dashboard, editor, preview pane — nothing past the bare
+email-plus-log-out placeholder screen. Credits are read (`Profile.credits`, a `bigint`) but never
+displayed or spent, deliberately — the feature doesn't exist yet.
 
 Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 
@@ -478,7 +501,8 @@ Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 | All three model providers | ✅ | query and code-agent paths |
 | Go API → AI service calls | 🟡 | one stub method, one broken URL — §11 |
 | Temporal workflows | 🟡 | a demo workflow only; no code-generation workflow |
-| Frontend beyond a transport | 🟡 | demo page does not compile |
+| Frontend auth surface (login, session gate, logout) | ✅ | end to end |
+| Frontend beyond auth (dashboard, editor, preview) | ⛔ | |
 | Credits: schema and display | 🟡 | granted (10 by default) and read; never spent |
 | Sandbox persistence / reuse / keep-alive | ⛔ | `domain.Sandbox` is defined but unused; no table |
 | Version history, code export (ZIP) | ⛔ | |
@@ -497,22 +521,27 @@ Verified against the code. Fix these deliberately rather than building on top of
    returning.
 2. **`AIService.CallAI()` is an empty stub** (`outbound/ai_service/openai_agent.go:8`) — it returns
    `nil` without calling anything. No Go code reaches the LLM endpoints.
-3. **The auth interceptor flattens handler error codes.** For *authenticated* requests,
-   `interceptor.go:26` re-wraps every handler error as `CodeInvalidArgument`, discarding the code
-   that `ToConnectError` just derived. A `NotFound` reaches an authenticated caller as
-   `InvalidArgument`; unauthenticated callers get the correct code. Return the error unwrapped.
-4. **Cookie parsing drops the JWT when it is not the last cookie.** The loop in
-   `grpc/adapters/auth/auth.go:70-76` resets `token` to `""` on every non-`jwt` cookie, so a
-   session survives only if `jwt` happens to be parsed last. Break on match instead.
-5. **OAuth state is replayable within its TTL.** `provider:<state>` is read in `CompleteLoginFlow`
-   (`oauth_service.go:125`) but never deleted, so the same `code`/`state` pair can be presented
-   repeatedly for up to 10 minutes. Delete the key after a successful exchange.
+3. ~~**The auth interceptor flattens handler error codes.**~~ **Fixed.** `interceptor.go` now passes
+   through the real code for client-caused errors (`Unauthenticated`, `PermissionDenied`,
+   `InvalidArgument`, `NotFound`, `AlreadyExists`) and collapses anything else — `Internal`,
+   `Unavailable`, `Unknown`, etc. — to a generic `CodeInternal` with a fixed message, logging the
+   real error server-side first. This is a deliberate choice, not the literal "always return
+   unwrapped" originally proposed: it avoids leaking infrastructure detail (a dropped DB connection,
+   a Redis timeout) in the error message reaching the browser, while still giving the frontend
+   accurate codes for genuine client-side problems.
+4. ~~**Cookie parsing drops the JWT when it is not the last cookie.**~~ **Fixed.** The loop in
+   `grpc/adapters/auth/auth.go` now returns on the first `jwt` match instead of continuing and
+   resetting `token` to `""` on every non-matching cookie.
+5. ~~**OAuth state is replayable within its TTL.**~~ **Fixed.** `CompleteLoginFlow`
+   (`oauth_service.go`) now deletes `provider:<state>` from Redis immediately after a successful
+   `Exchange` (not before — a transient Google failure must not burn the state). A delete failure is
+   logged, not returned, since the login itself already succeeded by that point.
 6. **The callback's success test is string matching.** `agent_callback_service.py:42,52` treats any
    tool output containing `"error"` as a failure — including a successful `cat` of a file that
    mentions the word. This silently drops real file writes from the result.
-7. **The frontend demo page does not compile.** `app/src/app/page.tsx` calls
-   `createUser({name: "tony"})` and reads `user.name`, but the proto has `first_name`, `last_name`,
-   and `email` — `name` does not exist on the generated type. Delete or rewrite the page.
+7. ~~**The frontend demo page does not compile.**~~ **Fixed.** `app/src/app/page.tsx` was rewritten
+   as the session gate (splash / logged-out / logged-in); the `create-next-app` scaffold and its
+   broken `createUser({name: "tony"})` call are gone.
 8. **The Temporal workflow is a placeholder.** `user-workflow` runs a `CreateSandbox` activity and
    an empty `UseLlm`; `StartUserWorkflow` blocks on `workflowRun.Get`, making the "async"
    orchestration synchronous. Its own comment says it will be replaced by the messages service.
