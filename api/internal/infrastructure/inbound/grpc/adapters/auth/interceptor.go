@@ -6,9 +6,22 @@ and refresh the token if needed. Done by modifying context and the req struct
 */
 import (
 	"context"
+	"errors"
 
 	"connectrpc.com/connect"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 )
+
+// codes describing something about the request itself are safe to return verbatim;
+// anything else can carry infrastructure detail in its message (a dropped db
+// connection, a redis timeout) and gets collapsed to a generic error instead
+var clientFacingCodes = map[connect.Code]bool{
+	connect.CodeUnauthenticated:  true,
+	connect.CodePermissionDenied: true,
+	connect.CodeInvalidArgument:  true,
+	connect.CodeNotFound:         true,
+	connect.CodeAlreadyExists:    true,
+}
 
 func (h *HTTPAuthAdapter) HTTPAuthInterceptor() connect.UnaryInterceptorFunc {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
@@ -23,7 +36,13 @@ func (h *HTTPAuthAdapter) HTTPAuthInterceptor() connect.UnaryInterceptorFunc {
 				res, err := next(context.WithValue(ctx, UserContextKey{}, user), req)
 				// post handler, modify response with new token if needed
 				if err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, err)
+					var connectErr *connect.Error
+					if errors.As(err, &connectErr) && clientFacingCodes[connectErr.Code()] {
+						return nil, err
+					}
+					// server-caused failure — keep the real detail in logs, not on the wire
+					utils.Logger.Error("authenticated request failed", "procedure", req.Spec().Procedure, "error", err)
+					return nil, connect.NewError(connect.CodeInternal, errors.New("internal error"))
 				}
 				if refresh {
 					h.RefreshJWTCookie(ctx, res, user.ID())
