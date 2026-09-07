@@ -26,11 +26,11 @@ type AuthDialogProps = {
 const COPY: Record<AuthMode, { title: string; description: string }> = {
   signup: {
     title: "Create your account",
-    description: "Start building in seconds.",
+    description: "Create an account with Google to start building.",
   },
   login: {
-    title: "Welcome back",
-    description: "Sign in to continue.",
+    title: "Sign in to continue",
+    description: "Sign in to your account with Google.",
   },
 };
 
@@ -61,13 +61,11 @@ export function AuthDialog({ open, onOpenChange, mode }: AuthDialogProps) {
       <DialogContent className="border-hairline bg-popover rounded-2xl sm:max-w-sm">
         <DialogHeader className="sm:text-center">
           <DialogTitle className="text-xl font-medium tracking-tight">{copy.title}</DialogTitle>
-          <DialogDescription>{copy.description}</DialogDescription>
+          <DialogDescription className="sr-only">{copy.description}</DialogDescription>
         </DialogHeader>
 
         <Button
-          variant="outline"
-          size="lg"
-          className="border-hairline bg-surface hover:bg-surface-2 hover:border-hairline-strong dark:border-hairline dark:bg-surface dark:hover:bg-surface-2 mt-2 w-full rounded-xl shadow-none"
+          className="mt-2 justify-self-center rounded-full shadow-none"
           onClick={() => begin.mutate()}
           disabled={begin.isPending}
         >

@@ -455,8 +455,11 @@ Two interceptors wrap every RPC, in this order: request logging, then auth.
 
 ## 9. Frontend 🟡
 
-The auth surface is ✅ **built** end to end. Everything past sign-in (dashboard, editor, preview) is
-still ⛔.
+The auth surface is ✅ **built** end to end. Past sign-in, `LoggedInScreen` now ships a full **static
+UI shell** for the product — two screens, Home and Workspace — but it runs entirely over local
+fixtures (`components/session/mock.ts`) with no backend wiring: no RPC exists yet for conversations,
+messages, or sandbox persistence. See `.planning/Frontend/logged_in_design.md` for the screen-by-screen
+design and the RPCs each piece implies; this section only tracks what is real versus fixture-backed.
 
 **Auth is real, not scaffolding.** `src/hooks/services/useServiceClient.ts` builds a memoised
 Connect transport from `NEXT_PUBLIC_API_URL` (falling back to `https://local.api.vulx.ai`), sends
@@ -480,12 +483,44 @@ and `<Toaster theme="dark" />` are mounted in `layout.tsx`. `@tanstack/react-que
 just an installed-but-unused dependency.
 
 `src/components/ui/` is a full shadcn install — treat it as vendored, restyle at the call site only.
-`src/components/session/` is new, holding post-login UI (`logged-in-screen.tsx`) as distinct from
-`src/components/landing/`.
+`src/components/session/` holds all post-login UI, distinct from `src/components/landing/`.
 
-**What is still not built:** dashboard, editor, preview pane — nothing past the bare
-email-plus-log-out placeholder screen. Credits are read (`Profile.credits`, a `bigint`) but never
-displayed or spent, deliberately — the feature doesn't exist yet.
+**`LoggedInScreen` (`logged-in-screen.tsx`) is one `SidebarProvider` shell over two states**,
+switched on whether a conversation is open (`openId` in local state — not a route):
+
+- **Home** (no conversation open): the sidebar renders `ConversationList` (the fixture
+  `CONVERSATIONS`, each row a title + relative time + a plain accent-coloured dot — no per-row
+  icon), and the inset renders `HomeView` (the two-tier "Welcome back" headline + a prompt box
+  identical to the logged-out hero's). Its "New build" button creates a blank local conversation
+  (no messages) and opens it directly into Workspace — there is no separate "new build" screen.
+- **Workspace** (a conversation open): the *same* sidebar panel becomes that conversation's chat
+  thread (`ChatPanel` — a Chat/Build mode `ToggleGroup`, a provider `Select`, and a message list
+  reusing `PROMPT_BOX`/`PROMPT_TEXTAREA` for the composer), and the inset becomes `PreviewPane`
+  (an iframe placeholder that reads `previewUrl` off the fixture — "No sandbox running" when null).
+  `Sidebar`'s `collapsible` prop is `"offcanvas"` in **both** states on purpose: only the
+  `--sidebar-width` CSS variable changes (16rem → 26rem) between them, and that variable is what
+  animates as a slide. Letting `collapsible` itself differ between Home and Workspace would put the
+  two states on different internal render branches of the vendored `Sidebar`, forcing a full
+  unmount/remount instead of a transition — this was tried and reverted. Home deliberately renders no
+  `SidebarTrigger`/`SidebarRail`, so nothing on that screen can collapse it even though the mechanism
+  underneath supports collapsing.
+- Logging out goes through a confirm `AlertDialog` ("Log out?") before `AccountLogout` fires — sized
+  to match the auth dialog's `sm:max-w-sm` for visual consistency between the app's two modals.
+
+`AuthDialog` (`components/auth/auth-dialog.tsx`) is the shared login/signup modal: one
+"Continue with Google" button (the default, near-white `Button` variant — no dark outline) that calls
+`BeginAccountAuth` the same way for both modes, and a title-only header (no subtext) per mode.
+
+A single non-system accent colour, `--accent-blue` (`#569CD6`), was added on top of the otherwise
+near-monochrome palette to mark selected/active state (the mode toggle's active icon, the composer
+border, the conversation-list dot, the logged-out "Log in" outline). See
+`.planning/Frontend/design-system.md` §1 and §3 for the token and the reasoning — this file only
+notes that it exists and is intentional, not accidental drift from the one-hue rule.
+
+**What is still not built:** every RPC the shell implies (`ListConversations`, `CreateConversation`,
+`SendMessage`, `GetConversation`, `GetPreview`) — see `logged_in_design.md` §5 for the exact mapping.
+Credits are read (`Profile.credits`, a `bigint`) but never displayed or spent, deliberately — the
+feature doesn't exist yet.
 
 Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 
@@ -502,7 +537,7 @@ Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 | Go API → AI service calls | 🟡 | one stub method, one broken URL — §11 |
 | Temporal workflows | 🟡 | a demo workflow only; no code-generation workflow |
 | Frontend auth surface (login, session gate, logout) | ✅ | end to end |
-| Frontend beyond auth (dashboard, editor, preview) | ⛔ | |
+| Frontend beyond auth (dashboard, editor, preview) | 🟡 | static Home/Workspace UI shell over fixtures — §9; no backend wiring |
 | Credits: schema and display | 🟡 | granted (10 by default) and read; never spent |
 | Sandbox persistence / reuse / keep-alive | ⛔ | `domain.Sandbox` is defined but unused; no table |
 | Version history, code export (ZIP) | ⛔ | |

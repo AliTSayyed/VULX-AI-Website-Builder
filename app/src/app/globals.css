@@ -45,6 +45,7 @@
   --color-hairline-strong: var(--hairline-strong);
   --color-mint: var(--mint);
   --color-foreground-dim: var(--foreground-dim);
+  --color-accent-blue: var(--accent-blue);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -92,6 +93,7 @@
   --hairline: oklch(0.9 0 0);
   --hairline-strong: oklch(0.82 0 0);
   --mint: oklch(0.72 0.13 155);
+  --accent-blue: #569cd6;
 }
 
 /*
@@ -152,6 +154,7 @@
   --hairline: oklch(0.42 0.01 245);
   --hairline-strong: oklch(0.52 0.012 245);
   --mint: oklch(0.9 0.09 155);
+  --accent-blue: #569cd6;
 }
 
 @layer base {
@@ -178,14 +181,30 @@
   }
 }
 
+/* Panel content swap: opacity only. Movement here would fight the width
+ * transition happening underneath it. The delay lets the width mostly settle
+ * before the new content resolves, so the two read as one gesture. */
+@keyframes vx-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @layer components {
   .vx-rise {
     animation: vx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+  .vx-fade {
+    animation: vx-fade 0.22s ease-out 0.08s both;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vx-rise {
+  .vx-rise,
+  .vx-fade {
     animation: none;
   }
 }

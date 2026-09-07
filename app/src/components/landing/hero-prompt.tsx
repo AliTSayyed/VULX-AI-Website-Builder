@@ -37,7 +37,7 @@ export function HeroPrompt({ onAuth }: HeroPromptProps) {
       value=""
       onValueChange={() => {}}
       onSubmit={open}
-      className="border-hairline bg-surface vx-rise mt-9 w-full max-w-2xl rounded-3xl p-3 shadow-none"
+      className="bg-surface vx-rise mt-9 w-full max-w-2xl rounded-3xl border-accent-blue p-3 shadow-none"
       style={{ animationDelay: "400ms" }}
     >
       {/*

@@ -22,7 +22,7 @@ export function TopBar({ onAuth }: TopBarProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="text-foreground-dim hover:bg-surface-2 hover:text-foreground dark:hover:bg-surface-2 hidden rounded-full px-4 sm:inline-flex"
+            className="text-foreground-dim hover:bg-surface-2 hover:text-foreground dark:hover:bg-surface-2 hidden rounded-full border border-accent-blue px-4 sm:inline-flex"
             onClick={() => onAuth("login")}
           >
             Log in
