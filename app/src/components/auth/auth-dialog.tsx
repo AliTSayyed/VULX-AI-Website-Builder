@@ -58,16 +58,16 @@ export function AuthDialog({ open, onOpenChange, mode }: AuthDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-xl tracking-tight">{copy.title}</DialogTitle>
+      <DialogContent className="border-hairline bg-popover rounded-2xl sm:max-w-sm">
+        <DialogHeader className="sm:text-center">
+          <DialogTitle className="text-xl font-medium tracking-tight">{copy.title}</DialogTitle>
           <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
 
         <Button
           variant="outline"
           size="lg"
-          className="mt-2 w-full"
+          className="border-hairline bg-surface hover:bg-surface-2 hover:border-hairline-strong dark:border-hairline dark:bg-surface dark:hover:bg-surface-2 mt-2 w-full rounded-xl shadow-none"
           onClick={() => begin.mutate()}
           disabled={begin.isPending}
         >

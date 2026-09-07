@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AuthDialog, type AuthMode } from "@/components/auth/auth-dialog";
 import { Hero } from "./hero";
 import { HeroPrompt } from "./hero-prompt";
+import { SilkBackground } from "./silk-background";
 import { SuggestionChips } from "./suggestion-chips";
 import { TopBar } from "./top-bar";
 
@@ -17,16 +18,21 @@ export function LoggedOutScreen() {
   };
 
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col">
+    <div className="bg-background text-foreground relative isolate flex min-h-screen flex-col overflow-hidden">
+      <SilkBackground className="-z-10" />
+
       <TopBar onAuth={openAuth} />
 
-      <main className="flex flex-1 flex-col items-center justify-center px-6 pb-12">
+      <main className="flex flex-1 flex-col items-center justify-center px-5 pb-12 sm:px-6">
         <Hero />
         <HeroPrompt onAuth={openAuth} />
         <SuggestionChips onSelect={() => openAuth("signup")} />
       </main>
 
-      <footer className="text-muted-foreground shrink-0 pb-6 text-center text-xs">
+      <footer
+        className="text-muted-foreground vx-rise shrink-0 pb-6 text-center text-[11.5px]"
+        style={{ animationDelay: "600ms" }}
+      >
         VULX can make mistakes. Check generated code before shipping.
       </footer>
 

@@ -1,11 +1,10 @@
-# Logged-Out Screen — Static Design (Phase 0)
+# Logged-Out Screen
 
-> **Scope.** The visual build only. Black background, white text, hero, prompt input, auth modal.
-> Interactive but not functional: the modal opens and closes, nothing touches the network.
-> Build order lives in `.planning/tasks/Frontend/logged_out_design/`.
+> **Scope.** Structure, layout and copy for the logged-out screen. Colour, type and surfaces are in
+> `design-system.md`, which supersedes §2 below. Sign-in is wired; the prompt is not.
 
-Reference image: `.planning/images/landing-ui-ref.png` (Taskly AI). We follow its **structure**,
-not its colours or its ornament.
+Structural reference: `.planning/refs/landing-ui-ref.png` (Taskly AI). Visual reference:
+`.planning/refs/silk-chat-hero-preview.jsx`.
 
 ## 1. What we take, and what we drop
 
@@ -21,6 +20,12 @@ not its colours or its ornament.
 | Orange cloud gradient, glassmorphism | **Dropped.** Flat black. |
 
 ## 2. Colour
+
+> **Superseded.** The flat-black monochrome palette below was replaced by the silk palette in
+> `design-system.md` §3. The `.dark` block quoted here is kept only as a record of what the screen
+> used to be — do not paste it back into `globals.css`. §3 (Layout), §4 (Copy) and §5
+> (Interactivity boundary) of this document are still current.
+
 
 Black background, white text, no accent hue. Greys are pure neutral (chroma `0`) — this is a
 monochrome screen on purpose, and the only saturated token is `--destructive`, kept because error
@@ -85,73 +90,72 @@ Forced dark: `className="dark"` on `<html>`. No `next-themes` provider until a l
 
 ```
 ┌──────────────────────────────────────────────┐
-│ ◆ VULX                  [Log in] [Sign up]   │  h-14, border-b
+│ [VX] VULX               [Log in] [Sign up]   │  h-16, no border, over silk
 ├──────────────────────────────────────────────┤
 │                                              │
+│         VULX is your personal                │  text-4xl→5xl, normal, dim
+│         AI Website Creator                   │  text-5xl→6xl, medium
 │                                              │
-│      VULX is your personal AI                │  text-4xl→6xl, font-medium
-│         Website Creator                      │  tracking-tight, text-balance
+│   Describe what you want. Watch it build.    │  text-sm, muted
 │                                              │
-│   Describe what you want. Watch it build.    │  text-lg, muted
-│                                              │
-│   ┌────────────────────────────────────┐     │
-│   │ Ask VULX to build...               │     │  max-w-3xl, bg-card
-│   │                                    │     │  rounded-3xl, min-h-40
+│   ┌────────────────────────────────────┐     │  max-w-2xl, bg-surface
+│   │ Ask VULX to build a portfolio…|    │     │  rounded-3xl, opaque, min-h-21
 │   │                              [ ↑ ] │     │
 │   └────────────────────────────────────┘     │
 │                                              │
+│      ( chips )  ( chips )  ( chips )         │  text-xs, pills
 └──────────────────────────────────────────────┘
 ```
 
-- Page: `min-h-screen bg-background text-foreground flex flex-col`.
-- Everything below the top bar is one centred column, `flex-1`, vertically centred, `max-w-3xl`.
+- Page: `relative isolate min-h-screen bg-background flex flex-col`, silk behind at `-z-10`.
+- Below the top bar: one centred column, `flex-1`, vertically centred, `max-w-2xl`.
 - No scroll at ≥ 720px viewport height.
-- Vertical rhythm: headline → subhead `mt-4`; subhead → input `mt-10`.
+- Vertical rhythm: headline → subhead `mt-5`; subhead → prompt `mt-9`; prompt → chips `mt-4`.
+- **One box, and nothing above it.** The prompt input is the only bordered surface. An earlier build
+  wrapped it in a second panel carrying a meta line (`Describe it once…` / `• Ready`); both the
+  panel and that line are gone.
+- **No centre app icon.** An earlier build put the VX tile above the headline; it was removed. The
+  mark appears only in the top bar.
 
 ## 4. Copy
 
 | Slot | Text |
 | --- | --- |
-| Wordmark | `VULX` |
+| Wordmark | `VULX`, after the VX monogram tile |
 | Headline | `VULX is your personal AI Website Creator` |
 | Subhead | `Describe what you want. Watch it build itself.` |
-| Placeholder | `Ask VULX to build...` |
-| Buttons | `Log in` (ghost) · `Sign up` (default) |
+| Prompt hint | `Ask VULX to build ` + a cycling tail, typed via `TypingText` (not a placeholder) |
+| Buttons | `Log in` (ghost pill) · `Sign up` (white pill) |
 | Modal, signup | `Create your account` / `Start building in seconds.` |
 | Modal, login | `Welcome back` / `Sign in to continue.` |
 | Modal button | `Continue with Google` |
 
 ## 5. Interactivity boundary
 
-Interactive, not functional. Everything below is local React state; **nothing calls the network.**
+The prompt is still interactive-not-functional; **auth is now live** (`BeginAccountAuth` → redirect,
+plus `/auth/callback` and the session query).
 
 | Action | Behaviour now | Behaviour later |
 | --- | --- | --- |
-| Click the input | Opens the auth modal | Focuses the textarea and lets you type |
-| Click the send button | Opens the auth modal | Submits the prompt |
+| Click the input / send button | Opens the auth modal | Focuses the textarea; submits the prompt |
+| Click a suggestion chip | Opens the auth modal | Prefills the prompt |
 | Click `Log in` / `Sign up` | Opens the auth modal, heading matches | unchanged |
-| Click `Continue with Google` | Nothing. Not wired. | `BeginAccountAuth` → redirect |
+| Click `Continue with Google` | **Wired** — `BeginAccountAuth`, then redirect | unchanged |
 | Escape / overlay click | Closes the modal | unchanged |
 
-The prompt textarea is **`readOnly`** in this phase, because "press the input, modal pops up" and
-"type freely" are mutually exclusive. When auth lands, drop `readOnly` and move the modal trigger
-to submit.
+The prompt textarea is **`readOnly`**, because "press the input, modal pops up" and "type freely"
+are mutually exclusive. When the generation flow lands, drop `readOnly`, remove the `TypingText`
+overlay, and move the modal trigger to submit.
 
 ## 6. Out of scope
 
-The left rail and conversations · any network call, session, or cookie · the OAuth round trip ·
-`/auth/callback` · the logged-in screen and the `Hi {name}` hero · light mode · `TextShimmer` and
-`ThinkingBar` (reserved for "Generating response…") · a model picker · attachments.
+Light mode · `TextShimmer` and `ThinkingBar` (reserved for "Generating response…") · attachments.
+The left rail, conversations, the `Welcome back` hero and the model picker all belong to the
+logged-in screen — see `logged_in_design.md`.
 
-## 7. Known snags the tasks handle
+## 7. Known snags — all resolved
 
-1. `app/src/app/page.tsx` calls `createUser({name})`, a field that does not exist on the generated
-   type — **the app does not compile today.** Task 1 replaces it.
-2. `PromptInput`'s wrapper is `bg-background`, identical to our page ground, so the box would be an
-   invisible outline. Task 4 overrides it to `bg-card`.
-3. `PromptInputTextarea` hardcodes `text-primary`, which under this palette is **white on near-black
-   — invisible placeholder contrast issues aside, typed text takes the primary colour**. Task 4
-   overrides to `text-foreground`.
-4. The underlying shadcn `Textarea` carries `dark:bg-input/30`. Tailwind-merge treats `dark:bg-*`
-   and `bg-*` as different keys, so `bg-transparent` alone does **not** win. Task 4 adds an explicit
-   `dark:bg-transparent`.
+The four snags this document tracked are fixed: the `createUser({name})` compile error is gone, and
+the three vendored-component overrides (`PromptInput`'s `bg-background`, `PromptInputTextarea`'s
+`text-primary`, and the `Textarea`'s `dark:bg-input/30`) now live as standing guidance in
+`design-system.md` §6, alongside a fourth found since.

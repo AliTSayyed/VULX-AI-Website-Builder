@@ -37,6 +37,15 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Glass layer — the silk palette's surface ladder. See design-system.md §3. */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-mint: var(--mint);
+  --color-foreground-dim: var(--foreground-dim);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -76,40 +85,73 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --foreground-dim: oklch(0.45 0 0);
+  --surface: oklch(0.97 0 0);
+  --surface-2: oklch(0.94 0 0);
+  --hairline: oklch(0.9 0 0);
+  --hairline-strong: oklch(0.82 0 0);
+  --mint: oklch(0.72 0.13 155);
 }
 
+/*
+ * Silk dark palette. Derived from .planning/refs/silk-chat-hero-preview.jsx:
+ * ink #f5f4f8, body rgba(230,228,235,·), glass rgba(255,255,255,0.05) on a
+ * rgba(255,255,255,0.14) hairline — but every one of those alphas is resolved to
+ * an OPAQUE value here. Translucent surfaces over the animated weave made muted
+ * text swing between 7:1 and 2:1 as ribbons flowed underneath; opaque holds it at
+ * a constant 7.6:1. See design-system.md §3. The weave is recoloured to a steel blue,
+ * rgb(112,132,158), from the reference's violet rgb(123,116,129). Hue 245 at very
+ * low chroma keeps that cool cast in the UI without reading as a blue tint.
+ */
 .dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(1 0 0);
-  --card: oklch(0 0 0);
-  --card-foreground: oklch(1 0 0);
-  --popover: oklch(0 0 0);
-  --popover-foreground: oklch(1 0 0);
-  --primary: oklch(0 0 0);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0 0 0);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0 0 0);
-  --muted-foreground: oklch(1 0 0);
-  --accent: oklch(0 0 0);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0 0 0);
-  --border: oklch(0 0 0);
-  --input: oklch(0 0 0);
-  --ring: oklch(1 0 0);
-  --chart-1: oklch(1 0 0);
-  --chart-2: oklch(1 0 0);
-  --chart-3: oklch(1 0 0);
-  --chart-4: oklch(1 0 0);
-  --chart-5: oklch(1 0 0);
-  --sidebar: oklch(0 0 0);
-  --sidebar-foreground: oklch(1 0 0);
-  --sidebar-primary: oklch(0 0 0);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0 0 0);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0 0 0);
-  --sidebar-ring: oklch(1 0 0);
+  --radius: 0.625rem;
+
+  --background: oklch(0.13 0.008 245);
+  --foreground: oklch(0.966 0.005 245);
+  --foreground-dim: oklch(0.8 0.012 245);
+
+  --card: oklch(0.18 0.009 245);
+  --card-foreground: oklch(0.966 0.005 245);
+  --popover: oklch(0.18 0.009 245);
+  --popover-foreground: oklch(0.966 0.005 245);
+
+  --primary: oklch(0.966 0.005 245);
+  --primary-foreground: oklch(0.15 0.009 245);
+
+  --secondary: oklch(0.24 0.01 245);
+  --secondary-foreground: oklch(0.966 0.005 245);
+  --muted: oklch(0.21 0.009 245);
+  --muted-foreground: oklch(0.72 0.012 245);
+  --accent: oklch(0.27 0.01 245);
+  --accent-foreground: oklch(0.966 0.005 245);
+
+  --border: oklch(0.42 0.01 245);
+  --input: oklch(0.42 0.01 245);
+  --ring: oklch(0.62 0.02 245);
+
+  --destructive: oklch(0.68 0.17 22);
+
+  --chart-1: oklch(0.97 0.004 245);
+  --chart-2: oklch(0.8 0.008 245);
+  --chart-3: oklch(0.62 0.012 245);
+  --chart-4: oklch(0.44 0.014 245);
+  --chart-5: oklch(0.28 0.012 245);
+
+  --sidebar: oklch(0.16 0.009 245);
+  --sidebar-foreground: oklch(0.966 0.005 245);
+  --sidebar-primary: oklch(0.966 0.005 245);
+  --sidebar-primary-foreground: oklch(0.15 0.009 245);
+  --sidebar-accent: oklch(0.27 0.01 245);
+  --sidebar-accent-foreground: oklch(0.966 0.005 245);
+  --sidebar-border: oklch(0.42 0.01 245);
+  --sidebar-ring: oklch(0.62 0.02 245);
+
+  --surface: oklch(0.18 0.009 245);
+  --surface-2: oklch(0.24 0.01 245);
+  --hairline: oklch(0.42 0.01 245);
+  --hairline-strong: oklch(0.52 0.012 245);
+  --mint: oklch(0.9 0.09 155);
 }
 
 @layer base {
@@ -118,5 +160,32 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/*
+ * Entrance: content rises into place once, staggered by inline animation-delay.
+ * Mirrors the reference's fadeStyle(delayMs) helper without per-element state.
+ */
+@keyframes vx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .vx-rise {
+    animation: vx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-rise {
+    animation: none;
   }
 }
