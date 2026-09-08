@@ -1,0 +1,48 @@
+version: "3"
+
+vars:
+  KIT_DIR: "{{.HOME}}/Documents/dotfiles/home/.config/sandboxes/agents"
+  SANDBOX_NAME: "sandbox-{{base .USER_WORKING_DIR}}"
+
+tasks:
+  # Creates and enters the sandbox for this directory, with a consistent name.
+  sbx:create:
+    desc: "Create the sandbox for this directory"
+    cmds:
+      - >
+        sbx run sandbox-base 
+        --name {{.SANDBOX_NAME}}
+        --detached
+        --kit {{.KIT_DIR}}/sandbox-base
+        --kit {{.KIT_DIR}}/pi
+        --kit {{.KIT_DIR}}/pi-config
+        --kit {{.KIT_DIR}}/claude-code
+        --kit {{.KIT_DIR}}/skills
+        --cpus 4
+        --memory 8g
+        || [ $? -eq 127 ] # ignore error code 127 when sandbox terminal exits
+
+  pi:
+    desc: "Re-attach to the sandbox with pi agent in Herdr panel"
+    cmds:
+      - HERDR_AGENT=pi sbx run --name {{.SANDBOX_NAME}} || [ $? -eq 127 ]
+
+  cc:
+    desc: "Re-attach to the sandbox with claude-code agent in Herdr panel"
+    cmds:
+      - HERDR_AGENT=claude-code sbx run --name {{.SANDBOX_NAME}} || [ $? -eq 127 ]
+
+  sbx:
+    desc: "Re-attatch to the sandbox"
+    cmds:
+      - sbx run --name {{.SANDBOX_NAME}} || [ $? -eq 127 ]
+
+  sbx:resume:
+    desc: "Re-attach to the existing sandbox for this directory"
+    cmds:
+      - sbx run --name {{.SANDBOX_NAME}} || [ $? -eq 127 ]
+
+  sbx:rm:
+    desc: "Remove the sandbox for this directory"
+    cmds:
+      - sbx rm {{.SANDBOX_NAME}}

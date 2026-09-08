@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 	"golang.org/x/oauth2"
 )
 
@@ -136,6 +137,11 @@ func (o *OauthService) CompleteLoginFlow(ctx context.Context, code string, state
 	token, err := oauthprovider.Exchange(ctx, code, options)
 	if err != nil {
 		return nil, domain.WrapError("oauth service complete login flow", err)
+	}
+
+	// state is single-use; consume it now that the code has been redeemed
+	if err := o.cache.Delete(ctx, fmt.Sprintf("provider:%s", state)); err != nil {
+		utils.Logger.Warn("failed to delete oauth state", "error", err)
 	}
 
 	// use token to get user profile information

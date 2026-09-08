@@ -66,15 +66,12 @@ func (h *HTTPAuthAdapter) GetJWTCookie(ctx context.Context, req connect.AnyReque
 		return ""
 	}
 
-	var token string
 	for _, cookie := range cookies {
 		if cookie.Name == apiCookieName {
-			token = cookie.Value
-		} else {
-			token = ""
+			return cookie.Value
 		}
 	}
-	return token
+	return ""
 }
 
 func (h *HTTPAuthAdapter) RefreshJWTCookie(ctx context.Context, res connect.AnyResponse, userID uuid.UUID) {
