@@ -49,6 +49,7 @@ func New(cfg *config.Config) *App {
 	// persistance
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
+	projectRepo := postgres.NewProjectRepository(db)
 
 	redis := cache.NewRedisClient(cfg.Redis)
 
@@ -67,10 +68,12 @@ func New(cfg *config.Config) *App {
 	accountService := services.NewAccountService(OAuthService, authService, userService)
 
 	// business logic
+	projectService := services.NewProjectService(projectRepo)
 
 	// handlers
 	accountServiceHandler := handlers.NewAccountServiceHandler(accountService, connectAuthAdapter)
 	userServiceHandler := handlers.NewUserServiceHandler(userService, connectAuthAdapter)
+	projectServiceHandler := handlers.NewProjectServiceHandler(projectService, connectAuthAdapter)
 
 	// (middleware)
 	interceptor := connect.WithInterceptors(
@@ -82,6 +85,7 @@ func New(cfg *config.Config) *App {
 	services := []*vanguard.Service{
 		vanguard.NewService(apiv1connect.NewAccountServiceHandler(accountServiceHandler, interceptor)),
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
+		vanguard.NewService(apiv1connect.NewProjectServiceHandler(projectServiceHandler, interceptor)),
 	}
 
 	transcoder, err := vanguard.NewTranscoder(services)
