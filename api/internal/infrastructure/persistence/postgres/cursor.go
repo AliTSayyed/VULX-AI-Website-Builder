@@ -10,8 +10,8 @@ import (
 
 var ErrTokenInvalid = domain.NewError(domain.ErrorTypeInvalid, errors.New("invalid token"))
 
-func encodeToken(createdAt time.Time) string {
-	return base64.URLEncoding.EncodeToString([]byte(createdAt.Format(time.RFC3339Nano)))
+func encodeToken(ts time.Time) string {
+	return base64.URLEncoding.EncodeToString([]byte(ts.Format(time.RFC3339Nano)))
 }
 
 func decodeToken(token string) (time.Time, error) {
@@ -24,10 +24,10 @@ func decodeToken(token string) (time.Time, error) {
 		return time.Time{}, ErrTokenInvalid
 	}
 
-	createdAt, err := time.Parse(time.RFC3339Nano, string(data))
+	ts, err := time.Parse(time.RFC3339Nano, string(data))
 	if err != nil {
 		return time.Time{}, ErrTokenInvalid
 	}
 
-	return createdAt, nil
+	return ts, nil
 }
