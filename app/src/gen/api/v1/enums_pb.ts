@@ -9,7 +9,7 @@ import { enumDesc, fileDesc } from "@bufbuild/protobuf/codegenv2";
  * Describes the file api/v1/enums.proto.
  */
 export const file_api_v1_enums: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcGkvdjEvZW51bXMucHJvdG8SBmFwaS52MSpKCg1Mb2dpblByb3ZpZGVyEh4KGkxPR0lOX1BST1ZJREVSX1VOU1BFQ0lGSUVEEAASGQoVTE9HSU5fUFJPVklERVJfR09PR0xFEAFCugEKCmNvbS5hcGkudjFCCkVudW1zUHJvdG9QAVpnZ2l0aHViLmNvbS9BbGlUU2F5eWVkL1ZVTFgtQUktV2Vic2l0ZS1CdWlsZGVyL2FwaS9pbnRlcm5hbC9pbmZyYXN0cnVjdHVyZS9pbmJvdW5kL2dycGMvZ2VuL2FwaS92MTthcGl2MaICA0FYWKoCBkFwaS5WMcoCBkFwaVxWMeICEkFwaVxWMVxHUEJNZXRhZGF0YeoCB0FwaTo6VjFiBnByb3RvMw");
+  fileDesc("ChJhcGkvdjEvZW51bXMucHJvdG8SBmFwaS52MSpKCg1Mb2dpblByb3ZpZGVyEh4KGkxPR0lOX1BST1ZJREVSX1VOU1BFQ0lGSUVEEAASGQoVTE9HSU5fUFJPVklERVJfR09PR0xFEAEqdAoKQWlQcm92aWRlchIbChdBSV9QUk9WSURFUl9VTlNQRUNJRklFRBAAEhYKEkFJX1BST1ZJREVSX09QRU5BSRABEhYKEkFJX1BST1ZJREVSX0dPT0dMRRACEhkKFUFJX1BST1ZJREVSX0FOVEhST1BJQxADQroBCgpjb20uYXBpLnYxQgpFbnVtc1Byb3RvUAFaZ2dpdGh1Yi5jb20vQWxpVFNheXllZC9WVUxYLUFJLVdlYnNpdGUtQnVpbGRlci9hcGkvaW50ZXJuYWwvaW5mcmFzdHJ1Y3R1cmUvaW5ib3VuZC9ncnBjL2dlbi9hcGkvdjE7YXBpdjGiAgNBWFiqAgZBcGkuVjHKAgZBcGlcVjHiAhJBcGlcVjFcR1BCTWV0YWRhdGHqAgdBcGk6OlYxYgZwcm90bzM");
 
 /**
  * @generated from enum api.v1.LoginProvider
@@ -31,4 +31,35 @@ export enum LoginProvider {
  */
 export const LoginProviderSchema: GenEnum<LoginProvider> = /*@__PURE__*/
   enumDesc(file_api_v1_enums, 0);
+
+/**
+ * @generated from enum api.v1.AiProvider
+ */
+export enum AiProvider {
+  /**
+   * @generated from enum value: AI_PROVIDER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AI_PROVIDER_OPENAI = 1;
+   */
+  OPENAI = 1,
+
+  /**
+   * @generated from enum value: AI_PROVIDER_GOOGLE = 2;
+   */
+  GOOGLE = 2,
+
+  /**
+   * @generated from enum value: AI_PROVIDER_ANTHROPIC = 3;
+   */
+  ANTHROPIC = 3,
+}
+
+/**
+ * Describes the enum api.v1.AiProvider.
+ */
+export const AiProviderSchema: GenEnum<AiProvider> = /*@__PURE__*/
+  enumDesc(file_api_v1_enums, 1);
 
