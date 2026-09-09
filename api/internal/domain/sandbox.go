@@ -1,48 +1,10 @@
 package domain
 
-import (
-	"errors"
-	"strings"
-
-	"github.com/google/uuid"
-)
-
-var ErrSandboxUrlEmpty = NewError(ErrorTypeInvalid, errors.New("sandbox url cannot be empty"))
-
+// Sandbox is a plain value object describing an external result, not an entity. Public
+// fields with json tags on purpose: application ports reference this type, and it may cross a
+// Temporal activity boundary later (Temporal's JSON converter would serialise unexported fields
+// to {}).
 type Sandbox struct {
-	id  uuid.UUID
-	url string
-}
-
-func NewSandbox(url string) (*Sandbox, error) {
-	url = strings.TrimSpace(url)
-	if url == "" {
-		return nil, ErrSandboxUrlEmpty
-	}
-
-	return &Sandbox{
-		id:  uuid.New(),
-		url: url,
-	}, nil
-}
-
-func RestoreSandbox(id uuid.UUID, url string) *Sandbox {
-	return &Sandbox{
-		id:  id,
-		url: url,
-	}
-}
-
-func (s *Sandbox) ID() uuid.UUID {
-	if s == nil {
-		return uuid.Nil
-	}
-	return s.id
-}
-
-func (s *Sandbox) Url() string {
-	if s == nil {
-		return ""
-	}
-	return s.url
+	ID  string `json:"id"`
+	URL string `json:"url"`
 }

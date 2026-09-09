@@ -2,31 +2,26 @@ package aiservice
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
+	"net/http"
 
+	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/domain"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/utils"
 )
 
-type SandboxResponse struct {
-	ID  string `json:"id"`
-	URL string `json:"url"`
-}
+func (a *AIService) CreateSandbox(ctx context.Context) (*domain.Sandbox, error) {
+	ctx, cancel := context.WithTimeout(ctx, createSandboxTimeout)
+	defer cancel()
 
-func (a *AIService) CreateSandbox(ctx context.Context) (*SandboxResponse, error) {
-	resp, err := a.client.Get(a.baseURL + "/sandbox/create")
-	if err != nil {
-		// TODO domain wrap this error
+	var sandbox domain.Sandbox
+	if err := a.do(ctx, http.MethodPost, "/sandbox/", nil, &sandbox); err != nil {
+		return nil, domain.WrapError("ai service create sandbox", err)
+	}
+	if sandbox.ID == "" || sandbox.URL == "" {
+		return nil, domain.NewError(domain.ErrorTypeInternal,
+			errors.New("ai service returned an empty sandbox id or url"))
 	}
 
-	defer resp.Body.Close()
-
-	var sandbox SandboxResponse
-	if err := json.NewDecoder(resp.Body).Decode(&sandbox); err != nil {
-		return nil, err
-	}
-
-	utils.Logger.Info("Sandbox created", "sandbox_id", sandbox.ID)
-	utils.Logger.Info("Sandbox url", "sandbox_url", sandbox.URL)
-
+	utils.Logger.Info("sandbox created", "sandbox_id", sandbox.ID, "url", sandbox.URL)
 	return &sandbox, nil
 }

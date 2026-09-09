@@ -33,7 +33,7 @@ async def create_sandbox(
     try:
         sbx: Sandbox = sandbox_service.create()  # currently only creating a nextjs sandbox
         logger.info("sandbox_creation_completed")
-        return CreateSandboxResponse(id=sbx.sandbox_id, url=sbx.get_host(3000))
+        return CreateSandboxResponse(id=sbx.sandbox_id, url=f"https://{sbx.get_host(3000)}")
     except Exception as e:
         logger.error(
             "sandbox_creation_failed",
