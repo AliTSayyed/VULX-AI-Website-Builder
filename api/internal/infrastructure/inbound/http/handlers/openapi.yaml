@@ -168,6 +168,59 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/v1/projects/{projectId}/messages:
+        get:
+            tags:
+                - MessageService
+            operationId: MessageService_ListMessages
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListMessagesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - MessageService
+            operationId: MessageService_SendMessage
+            parameters:
+                - name: projectId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SendMessageResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/v1/users:
         get:
             tags:
@@ -319,6 +372,13 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListMessagesResponse:
+            type: object
+            properties:
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Message'
         ListProjectsResponse:
             type: object
             properties:
@@ -341,6 +401,39 @@ components:
                     type: string
                 hasMore:
                     type: boolean
+        Message:
+            type: object
+            properties:
+                id:
+                    type: string
+                projectId:
+                    type: string
+                role:
+                    enum:
+                        - MESSAGE_ROLE_UNSPECIFIED
+                        - MESSAGE_ROLE_USER
+                        - MESSAGE_ROLE_ASSISTANT
+                    type: string
+                    format: enum
+                mode:
+                    enum:
+                        - CHAT_MODE_UNSPECIFIED
+                        - CHAT_MODE_CHAT
+                        - CHAT_MODE_BUILD
+                    type: string
+                    format: enum
+                provider:
+                    enum:
+                        - AI_PROVIDER_UNSPECIFIED
+                        - AI_PROVIDER_OPENAI
+                        - AI_PROVIDER_GOOGLE
+                        - AI_PROVIDER_ANTHROPIC
+                    type: string
+                    format: enum
+                body:
+                    type: string
+                createdAt:
+                    type: string
         Profile:
             type: object
             properties:
@@ -375,6 +468,35 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        SendMessageRequest:
+            type: object
+            properties:
+                projectId:
+                    type: string
+                body:
+                    type: string
+                mode:
+                    enum:
+                        - CHAT_MODE_UNSPECIFIED
+                        - CHAT_MODE_CHAT
+                        - CHAT_MODE_BUILD
+                    type: string
+                    format: enum
+                provider:
+                    enum:
+                        - AI_PROVIDER_UNSPECIFIED
+                        - AI_PROVIDER_OPENAI
+                        - AI_PROVIDER_GOOGLE
+                        - AI_PROVIDER_ANTHROPIC
+                    type: string
+                    format: enum
+        SendMessageResponse:
+            type: object
+            properties:
+                userMessage:
+                    $ref: '#/components/schemas/Message'
+                assistantMessage:
+                    $ref: '#/components/schemas/Message'
         Status:
             type: object
             properties:
@@ -408,5 +530,6 @@ components:
                     type: boolean
 tags:
     - name: AccountService
+    - name: MessageService
     - name: ProjectService
     - name: UserService

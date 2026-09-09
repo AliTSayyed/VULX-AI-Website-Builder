@@ -119,6 +119,104 @@ func (AiProvider) EnumDescriptor() ([]byte, []int) {
 	return file_api_v1_enums_proto_rawDescGZIP(), []int{1}
 }
 
+type MessageRole int32
+
+const (
+	MessageRole_MESSAGE_ROLE_UNSPECIFIED MessageRole = 0
+	MessageRole_MESSAGE_ROLE_USER        MessageRole = 1
+	MessageRole_MESSAGE_ROLE_ASSISTANT   MessageRole = 2
+)
+
+// Enum value maps for MessageRole.
+var (
+	MessageRole_name = map[int32]string{
+		0: "MESSAGE_ROLE_UNSPECIFIED",
+		1: "MESSAGE_ROLE_USER",
+		2: "MESSAGE_ROLE_ASSISTANT",
+	}
+	MessageRole_value = map[string]int32{
+		"MESSAGE_ROLE_UNSPECIFIED": 0,
+		"MESSAGE_ROLE_USER":        1,
+		"MESSAGE_ROLE_ASSISTANT":   2,
+	}
+)
+
+func (x MessageRole) Enum() *MessageRole {
+	p := new(MessageRole)
+	*p = x
+	return p
+}
+
+func (x MessageRole) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MessageRole) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_v1_enums_proto_enumTypes[2].Descriptor()
+}
+
+func (MessageRole) Type() protoreflect.EnumType {
+	return &file_api_v1_enums_proto_enumTypes[2]
+}
+
+func (x MessageRole) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MessageRole.Descriptor instead.
+func (MessageRole) EnumDescriptor() ([]byte, []int) {
+	return file_api_v1_enums_proto_rawDescGZIP(), []int{2}
+}
+
+type ChatMode int32
+
+const (
+	ChatMode_CHAT_MODE_UNSPECIFIED ChatMode = 0
+	ChatMode_CHAT_MODE_CHAT        ChatMode = 1
+	ChatMode_CHAT_MODE_BUILD       ChatMode = 2
+)
+
+// Enum value maps for ChatMode.
+var (
+	ChatMode_name = map[int32]string{
+		0: "CHAT_MODE_UNSPECIFIED",
+		1: "CHAT_MODE_CHAT",
+		2: "CHAT_MODE_BUILD",
+	}
+	ChatMode_value = map[string]int32{
+		"CHAT_MODE_UNSPECIFIED": 0,
+		"CHAT_MODE_CHAT":        1,
+		"CHAT_MODE_BUILD":       2,
+	}
+)
+
+func (x ChatMode) Enum() *ChatMode {
+	p := new(ChatMode)
+	*p = x
+	return p
+}
+
+func (x ChatMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ChatMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_v1_enums_proto_enumTypes[3].Descriptor()
+}
+
+func (ChatMode) Type() protoreflect.EnumType {
+	return &file_api_v1_enums_proto_enumTypes[3]
+}
+
+func (x ChatMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ChatMode.Descriptor instead.
+func (ChatMode) EnumDescriptor() ([]byte, []int) {
+	return file_api_v1_enums_proto_rawDescGZIP(), []int{3}
+}
+
 var File_api_v1_enums_proto protoreflect.FileDescriptor
 
 const file_api_v1_enums_proto_rawDesc = "" +
@@ -132,7 +230,15 @@ const file_api_v1_enums_proto_rawDesc = "" +
 	"\x17AI_PROVIDER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12AI_PROVIDER_OPENAI\x10\x01\x12\x16\n" +
 	"\x12AI_PROVIDER_GOOGLE\x10\x02\x12\x19\n" +
-	"\x15AI_PROVIDER_ANTHROPIC\x10\x03B\xba\x01\n" +
+	"\x15AI_PROVIDER_ANTHROPIC\x10\x03*^\n" +
+	"\vMessageRole\x12\x1c\n" +
+	"\x18MESSAGE_ROLE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11MESSAGE_ROLE_USER\x10\x01\x12\x1a\n" +
+	"\x16MESSAGE_ROLE_ASSISTANT\x10\x02*N\n" +
+	"\bChatMode\x12\x19\n" +
+	"\x15CHAT_MODE_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eCHAT_MODE_CHAT\x10\x01\x12\x13\n" +
+	"\x0fCHAT_MODE_BUILD\x10\x02B\xba\x01\n" +
 	"\n" +
 	"com.api.v1B\n" +
 	"EnumsProtoP\x01Zggithub.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1;apiv1\xa2\x02\x03AXX\xaa\x02\x06Api.V1\xca\x02\x06Api\\V1\xe2\x02\x12Api\\V1\\GPBMetadata\xea\x02\aApi::V1b\x06proto3"
@@ -149,10 +255,12 @@ func file_api_v1_enums_proto_rawDescGZIP() []byte {
 	return file_api_v1_enums_proto_rawDescData
 }
 
-var file_api_v1_enums_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_api_v1_enums_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_api_v1_enums_proto_goTypes = []any{
 	(LoginProvider)(0), // 0: api.v1.LoginProvider
 	(AiProvider)(0),    // 1: api.v1.AiProvider
+	(MessageRole)(0),   // 2: api.v1.MessageRole
+	(ChatMode)(0),      // 3: api.v1.ChatMode
 }
 var file_api_v1_enums_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -172,7 +280,7 @@ func file_api_v1_enums_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_enums_proto_rawDesc), len(file_api_v1_enums_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      4,
 			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   0,
