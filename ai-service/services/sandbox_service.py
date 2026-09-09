@@ -11,6 +11,7 @@ from services.models.sandbox_models import (
 from pydantic import BaseModel, Field
 from typing import List, Type
 from utils.logging import logger
+from api.config import settings
 
 """
 SandboxService: Handles E2B code execution sandbox operations
@@ -43,11 +44,11 @@ class SandboxService:
     def get_tools(self) -> List[BaseTool]:
         return self.tools
 
-    def create(self, template_id: str) -> Sandbox:
-        sbx = Sandbox.create(
-            template=template_id
-        )  # By default the sandbox is alive for 5 minutes
-        return sbx
+    def create(self) -> Sandbox:
+        return Sandbox.create(
+            template=settings.e2b_sandbox_nextjs_template_id,
+            timeout=settings.e2b_sandbox_timeout_seconds,
+        )
 
     def list_files(self, sandbox_id: str, path: str = "/home/user/") -> List[WriteInfo]:
         # path check
