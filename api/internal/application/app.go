@@ -23,7 +23,6 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	httpHandlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/http/handlers"
-	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/oauth"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
@@ -43,9 +42,6 @@ type App struct {
 func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
-	// DI
-	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
-
 	// persistance
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
@@ -55,8 +51,7 @@ func New(cfg *config.Config) *App {
 
 	// workflow orchestration
 	temporalService := temporal.New(cfg.Temporal)
-	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
-	temporalService.RegisterWorkers(userWorkflow)
+	temporalService.RegisterWorkers()
 
 	// account management
 	token := authToken.NewTokenService(cfg.Crypto)
@@ -64,7 +59,7 @@ func New(cfg *config.Config) *App {
 	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
 	OAuthService := services.NewOauthService(OAuthRegistry, redis)
 	connectAuthAdapter := auth.NewHTTPAuthAdapater(authService)
-	userService := services.NewUserService(userRepo, userWorkflow)
+	userService := services.NewUserService(userRepo)
 	accountService := services.NewAccountService(OAuthService, authService, userService)
 
 	// business logic
