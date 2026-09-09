@@ -14,11 +14,8 @@ type MessageRepository interface {
 	FindByProject(ctx context.Context, projectID uuid.UUID) ([]*domain.Message, error)
 }
 
-type SandboxCreator interface {
+type AIService interface {
 	CreateSandbox(ctx context.Context) (*domain.Sandbox, error)
-}
-
-type CodeAgentRunner interface {
 	RunCodeAgent(ctx context.Context, provider domain.AIProvider, sandboxID, message string) (*domain.CodeAgentResult, error)
 }
 
@@ -28,23 +25,20 @@ type MessageService struct {
 	messageRepo    MessageRepository
 	projectRepo    ProjectRepository
 	projectService *ProjectService
-	sandbox        SandboxCreator
-	codeAgent      CodeAgentRunner
+	aiService      AIService
 }
 
 func NewMessageService(
 	messageRepo MessageRepository,
 	projectRepo ProjectRepository,
 	projectService *ProjectService,
-	sandbox SandboxCreator,
-	codeAgent CodeAgentRunner,
+	aiService AIService,
 ) *MessageService {
 	return &MessageService{
 		messageRepo:    messageRepo,
 		projectRepo:    projectRepo,
 		projectService: projectService,
-		sandbox:        sandbox,
-		codeAgent:      codeAgent,
+		aiService:      aiService,
 	}
 }
 
@@ -105,7 +99,7 @@ func (s *MessageService) Send(
 	// 5. ensure a sandbox — ONLY if the project has none
 	sandboxID := project.SandboxID()
 	if sandboxID == "" {
-		info, err := s.sandbox.CreateSandbox(ctx)
+		info, err := s.aiService.CreateSandbox(ctx)
 		if err != nil {
 			return nil, nil, domain.WrapError("message service send: create sandbox", err)
 		}
@@ -116,7 +110,7 @@ func (s *MessageService) Send(
 	}
 
 	// 6. run the agent — blocks for minutes, inherits the caller's context
-	result, err := s.codeAgent.RunCodeAgent(ctx, provider, sandboxID, body)
+	result, err := s.aiService.RunCodeAgent(ctx, provider, sandboxID, body)
 	if err != nil {
 		return nil, nil, domain.WrapError("message service send: code agent", err)
 	}

@@ -23,6 +23,7 @@ import (
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/grpc/gen/api/v1/apiv1connect"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/handlers"
 	httpHandlers "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/inbound/http/handlers"
+	aiservice "github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/ai_service"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/oauth"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/outbound/temporal"
 	"github.com/AliTSayyed/VULX-AI-Website-Builder/api/internal/infrastructure/persistence/postgres"
@@ -42,10 +43,14 @@ type App struct {
 func New(cfg *config.Config) *App {
 	utils.InitilizeLogger()
 
+	// DI
+	aiservice := aiservice.NewAIService(cfg.AIServiceUrl)
+
 	// persistance
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
 	projectRepo := postgres.NewProjectRepository(db)
+	messageRepo := postgres.NewMessageRepository(db)
 
 	redis := cache.NewRedisClient(cfg.Redis)
 
@@ -64,11 +69,13 @@ func New(cfg *config.Config) *App {
 
 	// business logic
 	projectService := services.NewProjectService(projectRepo)
+	messageService := services.NewMessageService(messageRepo, projectRepo, projectService, aiservice)
 
 	// handlers
 	accountServiceHandler := handlers.NewAccountServiceHandler(accountService, connectAuthAdapter)
 	userServiceHandler := handlers.NewUserServiceHandler(userService, connectAuthAdapter)
 	projectServiceHandler := handlers.NewProjectServiceHandler(projectService, connectAuthAdapter)
+	messageServiceHandler := handlers.NewMessageServiceHandler(messageService, connectAuthAdapter)
 
 	// (middleware)
 	interceptor := connect.WithInterceptors(
@@ -81,6 +88,7 @@ func New(cfg *config.Config) *App {
 		vanguard.NewService(apiv1connect.NewAccountServiceHandler(accountServiceHandler, interceptor)),
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
 		vanguard.NewService(apiv1connect.NewProjectServiceHandler(projectServiceHandler, interceptor)),
+		vanguard.NewService(apiv1connect.NewMessageServiceHandler(messageServiceHandler, interceptor)),
 	}
 
 	transcoder, err := vanguard.NewTranscoder(services)
