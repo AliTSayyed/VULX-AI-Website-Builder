@@ -9,22 +9,12 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PROMPT_BOX } from "@/components/prompt/prompt-styles";
 import { cn } from "@/lib/utils";
-import {
-  PROVIDERS,
-  type ChatMode,
-  type Conversation,
-  type Provider,
-} from "./mock";
+import type { Conversation } from "./mock";
+import { AiProvider, ChatMode } from "@/gen/api/v1/enums_pb";
+import { ComposerControls } from "./composer-controls";
+import { DEFAULT_PROVIDER } from "./providers";
 
 type ChatPanelProps = {
   conversation: Conversation;
@@ -33,8 +23,8 @@ type ChatPanelProps = {
 
 export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
   const [value, setValue] = useState("");
-  const [provider, setProvider] = useState<Provider>("anthropic");
-  const [mode, setMode] = useState<ChatMode>("build");
+  const [provider, setProvider] = useState<AiProvider>(DEFAULT_PROVIDER);
+  const [mode, setMode] = useState<ChatMode>(ChatMode.BUILD);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -96,7 +86,9 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
         >
           <PromptInputTextarea
             placeholder={
-              mode === "build" ? "Describe a change..." : "Ask a question..."
+              mode === ChatMode.BUILD
+                ? "Describe a change..."
+                : "Ask a question..."
             }
             className="text-foreground placeholder:text-muted-foreground min-h-16 bg-transparent text-[13px] leading-5 dark:bg-transparent"
           />
@@ -107,54 +99,12 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
              * spends credits, Chat does neither — so it gets a segmented toggle
              * rather than hiding inside a dropdown. See logged_in_design.md §3.
              */}
-            <div className="flex min-w-0 items-center gap-3">
-              <ToggleGroup
-                type="single"
-                value={mode}
-                onValueChange={(v) => v && setMode(v as ChatMode)}
-                className="border-hairline bg-surface-2 h-8 gap-0 rounded-full border p-1"
-              >
-                <ToggleGroupItem
-                  value="chat"
-                  aria-label="Chat mode"
-                  className="group text-foreground-dim data-[state=on]:text-foreground-dim h-full gap-1 rounded-full bg-transparent px-2.5 text-[11px] shadow-none focus-visible:shadow-none focus-visible:ring-0 data-[state=on]:bg-transparent data-[state=on]:shadow-none"
-                >
-                  <MessageSquare className="size-3 group-data-[state=on]:text-accent-blue" />
-                  Chat
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="build"
-                  aria-label="Build mode"
-                  className="group text-foreground-dim data-[state=on]:text-foreground-dim h-full gap-1 rounded-full bg-transparent px-2.5 text-[11px] shadow-none focus-visible:shadow-none focus-visible:ring-0 data-[state=on]:bg-transparent data-[state=on]:shadow-none"
-                >
-                  <Hammer className="size-3 group-data-[state=on]:text-accent-blue" />
-                  Build
-                </ToggleGroupItem>
-              </ToggleGroup>
-
-              <Select
-                value={provider}
-                onValueChange={(v) => setProvider(v as Provider)}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="border-hairline bg-surface-2 dark:bg-surface-2 dark:hover:bg-surface-2 h-8 gap-1 rounded-full px-2.5 text-[11px] shadow-none"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDERS.map((p) => (
-                    <SelectItem
-                      key={p.value}
-                      value={p.value}
-                      className="text-xs"
-                    >
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <ComposerControls
+              mode={mode}
+              onModeChange={setMode}
+              provider={provider}
+              onProviderChange={setProvider}
+            />
 
             <Button
               size="icon"
