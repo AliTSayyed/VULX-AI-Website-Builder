@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ConnectError } from "@connectrpc/connect";
 import { useAccountService } from "@/hooks/services/useAccountService";
@@ -55,9 +56,9 @@ function CallbackHandler() {
     return (
       <div className="bg-background text-foreground flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-muted-foreground text-sm text-balance">{error}</p>
-        <a href="/" className="underline underline-offset-4">
+        <Link href="/" className="underline underline-offset-4">
           Back to VULX
-        </a>
+        </Link>
       </div>
     );
   }
