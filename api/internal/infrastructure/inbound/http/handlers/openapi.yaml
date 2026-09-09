@@ -94,6 +94,80 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /api/v1/projects:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_ListProjects
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: string
+                - name: token
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListProjectsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - ProjectService
+            operationId: ProjectService_CreateProject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateProjectRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /api/v1/projects/{id}:
+        get:
+            tags:
+                - ProjectService
+            operationId: ProjectService_GetProject
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetProjectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /api/v1/users:
         get:
             tags:
@@ -178,6 +252,24 @@ components:
             properties:
                 loginUrl:
                     type: string
+        CreateProjectRequest:
+            type: object
+            properties:
+                firstPrompt:
+                    type: string
+                provider:
+                    enum:
+                        - AI_PROVIDER_UNSPECIFIED
+                        - AI_PROVIDER_OPENAI
+                        - AI_PROVIDER_GOOGLE
+                        - AI_PROVIDER_ANTHROPIC
+                    type: string
+                    format: enum
+        CreateProjectResponse:
+            type: object
+            properties:
+                project:
+                    $ref: '#/components/schemas/Project'
         CreateUserRequest:
             type: object
             properties:
@@ -204,6 +296,11 @@ components:
             properties:
                 profile:
                     $ref: '#/components/schemas/Profile'
+        GetProjectResponse:
+            type: object
+            properties:
+                project:
+                    $ref: '#/components/schemas/Project'
         GetUserProfileResponse:
             type: object
             properties:
@@ -222,6 +319,17 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListProjectsResponse:
+            type: object
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Project'
+                token:
+                    type: string
+                hasMore:
+                    type: boolean
         ListUsersResponse:
             type: object
             properties:
@@ -243,6 +351,29 @@ components:
                 email:
                     type: string
                 credits:
+                    type: string
+        Project:
+            type: object
+            properties:
+                id:
+                    type: string
+                title:
+                    type: string
+                provider:
+                    enum:
+                        - AI_PROVIDER_UNSPECIFIED
+                        - AI_PROVIDER_OPENAI
+                        - AI_PROVIDER_GOOGLE
+                        - AI_PROVIDER_ANTHROPIC
+                    type: string
+                    format: enum
+                sandboxId:
+                    type: string
+                previewUrl:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
                     type: string
         Status:
             type: object
@@ -277,4 +408,5 @@ components:
                     type: boolean
 tags:
     - name: AccountService
+    - name: ProjectService
     - name: UserService
