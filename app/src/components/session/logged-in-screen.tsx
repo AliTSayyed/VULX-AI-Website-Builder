@@ -184,8 +184,11 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
             >
               {conversation ? (
                 <ChatPanel
-                  conversation={conversation}
+                  projectId={conversation.id}
+                  title={conversation.title}
                   onBack={() => setOpenId(null)}
+                  onSend={() => {}}
+                  generating={false}
                 />
               ) : (
                 <ConversationList

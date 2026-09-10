@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, ArrowUp, Hammer, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   PromptInput,
@@ -11,20 +11,49 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PROMPT_BOX } from "@/components/prompt/prompt-styles";
 import { cn } from "@/lib/utils";
-import type { Conversation } from "./mock";
-import { AiProvider, ChatMode } from "@/gen/api/v1/enums_pb";
+import { AiProvider, ChatMode, MessageRole } from "@/gen/api/v1/enums_pb";
 import { ComposerControls } from "./composer-controls";
-import { DEFAULT_PROVIDER } from "./providers";
+import { GeneratingLine } from "./generating";
+import { providerOrDefault } from "./providers";
+import { useMessages } from "@/hooks/useMessages";
 
 type ChatPanelProps = {
-  conversation: Conversation;
+  /** null while the Workspace is on a draft — no project exists yet. */
+  projectId: string | null;
+  title: string;
   onBack: () => void;
+  onSend: (input: { body: string; mode: ChatMode; provider: AiProvider }) => void;
+  generating: boolean;
+  /** Seeds the provider select from the open project. */
+  defaultProvider?: AiProvider;
 };
 
-export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
+export function ChatPanel({
+  projectId,
+  title,
+  onBack,
+  onSend,
+  generating,
+  defaultProvider,
+}: ChatPanelProps) {
   const [value, setValue] = useState("");
-  const [provider, setProvider] = useState<AiProvider>(DEFAULT_PROVIDER);
+  const [provider, setProvider] = useState<AiProvider>(
+    providerOrDefault(defaultProvider),
+  );
   const [mode, setMode] = useState<ChatMode>(ChatMode.BUILD);
+  const { data: messages = [], isPending } = useMessages(projectId);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [messages.length, generating]);
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (!trimmed || generating) return;
+    onSend({ body: trimmed, mode, provider });
+    setValue("");
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -39,20 +68,20 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
           <ArrowLeft className="size-3.5" />
         </Button>
         <span className="text-foreground truncate text-sm font-medium">
-          {conversation.title}
+          {title}
         </span>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-4 p-3">
-          {conversation.messages.length === 0 && (
+          {messages.length === 0 && !isPending && !generating && (
             <p className="text-muted-foreground px-1 py-8 text-center text-xs">
               No messages yet.
             </p>
           )}
 
-          {conversation.messages.map((m) =>
-            m.role === "user" ? (
+          {messages.map((m) =>
+            m.role === MessageRole.USER ? (
               <div key={m.id} className="flex justify-end">
                 <p className="bg-surface-2 text-foreground max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed">
                   {m.body}
@@ -61,12 +90,12 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
             ) : (
               <div key={m.id} className="flex flex-col gap-1.5">
                 <span className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px]">
-                  {m.mode === "build" ? (
+                  {m.mode === ChatMode.BUILD ? (
                     <Hammer className="size-3 text-accent-blue" />
                   ) : (
                     <MessageSquare className="size-3 text-accent-blue" />
                   )}
-                  {m.mode === "build" ? "Build" : "Chat"}
+                  {m.mode === ChatMode.BUILD ? "Build" : "Chat"}
                 </span>
                 <p className="text-foreground-dim px-1 text-[13px] leading-relaxed">
                   {m.body}
@@ -74,6 +103,18 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
               </div>
             ),
           )}
+
+          {generating && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px]">
+                <Hammer className="text-accent-blue size-3" />
+                Build
+              </span>
+              <GeneratingLine className="px-1" />
+            </div>
+          )}
+
+          <div ref={bottomRef} />
         </div>
       </ScrollArea>
 
@@ -81,7 +122,8 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
         <PromptInput
           value={value}
           onValueChange={setValue}
-          onSubmit={() => setValue("")}
+          onSubmit={submit}
+          disabled={generating}
           className={cn(PROMPT_BOX, "border-accent-blue")}
         >
           <PromptInputTextarea
@@ -104,13 +146,14 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
               onModeChange={setMode}
               provider={provider}
               onProviderChange={setProvider}
+              disabled={generating}
             />
 
             <Button
               size="icon"
               className="size-8 shrink-0 rounded-full"
-              disabled={!value.trim()}
-              onClick={() => setValue("")}
+              disabled={generating || !value.trim()}
+              onClick={submit}
               aria-label="Send message"
             >
               <ArrowUp className="size-3.5" />
