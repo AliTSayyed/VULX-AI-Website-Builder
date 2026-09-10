@@ -47,6 +47,8 @@ type View =
   | { kind: "draft" } // Workspace open, no project created yet
   | { kind: "project"; id: string };
 
+const TITLE_POLL_WINDOW_MS = 18_000;
+
 const TRIGGER =
   "text-foreground-dim hover:bg-surface-2 hover:text-foreground dark:hover:bg-surface-2 size-7 shrink-0 rounded-full";
 
@@ -68,12 +70,16 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>({ kind: "home" });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // The id of a project whose title might still be generating — set only in
+  // start()'s create branch, cleared after the poll window regardless of outcome.
+  const [pendingTitleId, setPendingTitleId] = useState<string | null>(null);
 
   const isWorkspace = view.kind !== "home";
   const projectId = view.kind === "project" ? view.id : null;
+  const titlePending = projectId !== null && projectId === pendingTitleId;
 
   const { data: projects = [], isPending: projectsLoading } = useProjects();
-  const { data: project } = useProject(projectId);
+  const { data: project } = useProject(projectId, { pollForTitle: titlePending });
   const createProject = useCreateProject();
   const sendMessage = useSendMessage();
 
@@ -106,6 +112,10 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
           provider: input.provider,
         });
         id = created.id;
+        setPendingTitleId(id);
+        setTimeout(() => {
+          setPendingTitleId((cur) => (cur === id ? null : cur));
+        }, TITLE_POLL_WINDOW_MS);
         // Switch views the moment the project exists, not when the build
         // ends: the sidebar row and the real thread appear immediately, and
         // the send below runs against a Workspace that is already on screen.
@@ -212,6 +222,7 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
                   }
                   generating={generating}
                   defaultProvider={project?.provider}
+                  titlePending={titlePending}
                 />
               ) : (
                 <ProjectList

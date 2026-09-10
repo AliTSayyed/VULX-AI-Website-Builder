@@ -12,6 +12,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { PROMPT_BOX } from "@/components/prompt/prompt-styles";
 import { cn } from "@/lib/utils";
 import { AiProvider, ChatMode, MessageRole } from "@/gen/api/v1/enums_pb";
+import {
+  TypingText,
+  TypingTextCursor,
+} from "@/components/animate-ui/primitives/texts/typing";
 import { ComposerControls } from "./composer-controls";
 import { GeneratingLine } from "./generating";
 import { providerOrDefault } from "./providers";
@@ -26,6 +30,8 @@ type ChatPanelProps = {
   generating: boolean;
   /** Seeds the provider select from the open project. */
   defaultProvider?: AiProvider;
+  /** True only while this project's title might still be generating. */
+  titlePending?: boolean;
 };
 
 export function ChatPanel({
@@ -35,8 +41,13 @@ export function ChatPanel({
   onSend,
   generating,
   defaultProvider,
+  titlePending,
 }: ChatPanelProps) {
   const [value, setValue] = useState("");
+  // Snapshot the title as of this panel's mount (it's remounted per project via
+  // its key) — comparing against this is what lets the real title reveal itself
+  // the moment it lands, without waiting out the full poll window.
+  const [initialTitle] = useState(title);
   const [provider, setProvider] = useState<AiProvider>(
     providerOrDefault(defaultProvider),
   );
@@ -68,7 +79,19 @@ export function ChatPanel({
           <ArrowLeft className="size-3.5" />
         </Button>
         <span className="text-foreground truncate text-sm font-medium">
-          {title}
+          {titlePending && title === initialTitle ? (
+            <span key="generating" className="vx-fade">
+              <TypingText text="Generating title…" duration={40}>
+                <TypingTextCursor
+                  style={{ height: "1em", transform: "translateY(0.15em)" }}
+                />
+              </TypingText>
+            </span>
+          ) : (
+            <span key="title" className="vx-fade">
+              {title}
+            </span>
+          )}
         </span>
       </div>
 
