@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "api/v1/enums.proto";
+import "google/api/annotations.proto";
+
+service MessageService {
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/projects/{project_id}/messages"
+    };
+  }
+
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/projects/{project_id}/messages"
+      body : "*"
+    };
+  }
+}
+
+message Message {
+  string id = 1;
+  string project_id = 2;
+  MessageRole role = 3;
+  ChatMode mode = 4;
+  AiProvider provider = 5;
+  string body = 6;
+  string created_at = 7; // RFC3339
+}
+
+message ListMessagesRequest { string project_id = 1; }
+
+message ListMessagesResponse { repeated Message messages = 1; }
+
+message SendMessageRequest {
+  string project_id = 1;
+  string body = 2;
+  ChatMode mode = 3;
+  AiProvider provider = 4;
+}
+
+message SendMessageResponse {
+  Message user_message = 1;
+  Message assistant_message = 2;
+}

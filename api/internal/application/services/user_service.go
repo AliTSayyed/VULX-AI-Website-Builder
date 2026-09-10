@@ -21,19 +21,13 @@ type UserRepository interface {
 	CreateProvider(ctx context.Context, userID uuid.UUID, provider string, providerID string) (*domain.UserFromProvider, error)
 }
 
-type UserWorkflowService interface {
-	StartUserWorkflow(ctx context.Context) error
-}
-
 type UserService struct {
-	userRepo     UserRepository
-	userWorkflow UserWorkflowService
+	userRepo UserRepository
 }
 
-func NewUserService(userRepo UserRepository, userWorkflow UserWorkflowService) *UserService {
+func NewUserService(userRepo UserRepository) *UserService {
 	return &UserService{
-		userRepo:     userRepo,
-		userWorkflow: userWorkflow,
+		userRepo: userRepo,
 	}
 }
 

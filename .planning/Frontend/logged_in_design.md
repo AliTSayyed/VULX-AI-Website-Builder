@@ -101,6 +101,12 @@ Use `variant="sidebar"` — **not** `floating` or `inset`.
 
 ## 5. What this needs that does not exist
 
+> **Superseded.** This section predates the backend build-out and names RPCs (`ListConversations`,
+> `CreateConversation`, `GetConversation`, `GetPreview`) that were never built under those names —
+> see `responsive-logged-in-screen.md` for what actually shipped (`ListProjects`/`CreateProject`/
+> `GetProject`/`ListMessages`/`SendMessage`). Kept as-is for the historical reasoning, not as a
+> current blocker list.
+
 The screen is mostly blocked on backend work, and the blockers are load-bearing — not polish.
 
 | Need | Status | Consequence if ignored |
@@ -114,6 +120,12 @@ The screen is mostly blocked on backend work, and the blockers are load-bearing 
 prompt, in both modes, goes through the Go API. Do not design a flow that assumes otherwise.
 
 ## 6. Endpoints this screen implies
+
+> **Superseded.** Written before the backend existed, so it names endpoints
+> (`ListConversations`/`CreateConversation`/`GetConversation`/`GetPreview`) that were never built —
+> the real contract is `ProjectService`/`MessageService` in `proto/api/v1/`, wired up per
+> `responsive-logged-in-screen.md`. Kept as-is for the historical reasoning behind the two open
+> shape questions below, not as a current spec.
 
 Read off the static build. `Profile` and logout already exist; everything below does not.
 `{provider}` is `openai` / `google` / `anthropic`.

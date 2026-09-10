@@ -9,7 +9,7 @@ import { enumDesc, fileDesc } from "@bufbuild/protobuf/codegenv2";
  * Describes the file api/v1/enums.proto.
  */
 export const file_api_v1_enums: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcGkvdjEvZW51bXMucHJvdG8SBmFwaS52MSpKCg1Mb2dpblByb3ZpZGVyEh4KGkxPR0lOX1BST1ZJREVSX1VOU1BFQ0lGSUVEEAASGQoVTE9HSU5fUFJPVklERVJfR09PR0xFEAFCugEKCmNvbS5hcGkudjFCCkVudW1zUHJvdG9QAVpnZ2l0aHViLmNvbS9BbGlUU2F5eWVkL1ZVTFgtQUktV2Vic2l0ZS1CdWlsZGVyL2FwaS9pbnRlcm5hbC9pbmZyYXN0cnVjdHVyZS9pbmJvdW5kL2dycGMvZ2VuL2FwaS92MTthcGl2MaICA0FYWKoCBkFwaS5WMcoCBkFwaVxWMeICEkFwaVxWMVxHUEJNZXRhZGF0YeoCB0FwaTo6VjFiBnByb3RvMw");
+  fileDesc("ChJhcGkvdjEvZW51bXMucHJvdG8SBmFwaS52MSpKCg1Mb2dpblByb3ZpZGVyEh4KGkxPR0lOX1BST1ZJREVSX1VOU1BFQ0lGSUVEEAASGQoVTE9HSU5fUFJPVklERVJfR09PR0xFEAEqdAoKQWlQcm92aWRlchIbChdBSV9QUk9WSURFUl9VTlNQRUNJRklFRBAAEhYKEkFJX1BST1ZJREVSX09QRU5BSRABEhYKEkFJX1BST1ZJREVSX0dPT0dMRRACEhkKFUFJX1BST1ZJREVSX0FOVEhST1BJQxADKl4KC01lc3NhZ2VSb2xlEhwKGE1FU1NBR0VfUk9MRV9VTlNQRUNJRklFRBAAEhUKEU1FU1NBR0VfUk9MRV9VU0VSEAESGgoWTUVTU0FHRV9ST0xFX0FTU0lTVEFOVBACKk4KCENoYXRNb2RlEhkKFUNIQVRfTU9ERV9VTlNQRUNJRklFRBAAEhIKDkNIQVRfTU9ERV9DSEFUEAESEwoPQ0hBVF9NT0RFX0JVSUxEEAJCugEKCmNvbS5hcGkudjFCCkVudW1zUHJvdG9QAVpnZ2l0aHViLmNvbS9BbGlUU2F5eWVkL1ZVTFgtQUktV2Vic2l0ZS1CdWlsZGVyL2FwaS9pbnRlcm5hbC9pbmZyYXN0cnVjdHVyZS9pbmJvdW5kL2dycGMvZ2VuL2FwaS92MTthcGl2MaICA0FYWKoCBkFwaS5WMcoCBkFwaVxWMeICEkFwaVxWMVxHUEJNZXRhZGF0YeoCB0FwaTo6VjFiBnByb3RvMw");
 
 /**
  * @generated from enum api.v1.LoginProvider
@@ -31,4 +31,87 @@ export enum LoginProvider {
  */
 export const LoginProviderSchema: GenEnum<LoginProvider> = /*@__PURE__*/
   enumDesc(file_api_v1_enums, 0);
+
+/**
+ * @generated from enum api.v1.AiProvider
+ */
+export enum AiProvider {
+  /**
+   * @generated from enum value: AI_PROVIDER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AI_PROVIDER_OPENAI = 1;
+   */
+  OPENAI = 1,
+
+  /**
+   * @generated from enum value: AI_PROVIDER_GOOGLE = 2;
+   */
+  GOOGLE = 2,
+
+  /**
+   * @generated from enum value: AI_PROVIDER_ANTHROPIC = 3;
+   */
+  ANTHROPIC = 3,
+}
+
+/**
+ * Describes the enum api.v1.AiProvider.
+ */
+export const AiProviderSchema: GenEnum<AiProvider> = /*@__PURE__*/
+  enumDesc(file_api_v1_enums, 1);
+
+/**
+ * @generated from enum api.v1.MessageRole
+ */
+export enum MessageRole {
+  /**
+   * @generated from enum value: MESSAGE_ROLE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MESSAGE_ROLE_USER = 1;
+   */
+  USER = 1,
+
+  /**
+   * @generated from enum value: MESSAGE_ROLE_ASSISTANT = 2;
+   */
+  ASSISTANT = 2,
+}
+
+/**
+ * Describes the enum api.v1.MessageRole.
+ */
+export const MessageRoleSchema: GenEnum<MessageRole> = /*@__PURE__*/
+  enumDesc(file_api_v1_enums, 2);
+
+/**
+ * @generated from enum api.v1.ChatMode
+ */
+export enum ChatMode {
+  /**
+   * @generated from enum value: CHAT_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CHAT_MODE_CHAT = 1;
+   */
+  CHAT = 1,
+
+  /**
+   * @generated from enum value: CHAT_MODE_BUILD = 2;
+   */
+  BUILD = 2,
+}
+
+/**
+ * Describes the enum api.v1.ChatMode.
+ */
+export const ChatModeSchema: GenEnum<ChatMode> = /*@__PURE__*/
+  enumDesc(file_api_v1_enums, 3);
 

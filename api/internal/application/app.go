@@ -49,13 +49,14 @@ func New(cfg *config.Config) *App {
 	// persistance
 	db := postgres.NewDb(cfg.DB)
 	userRepo := postgres.NewUserRepository(db)
+	projectRepo := postgres.NewProjectRepository(db)
+	messageRepo := postgres.NewMessageRepository(db)
 
 	redis := cache.NewRedisClient(cfg.Redis)
 
 	// workflow orchestration
 	temporalService := temporal.New(cfg.Temporal)
-	userWorkflow := temporal.NewUserWorkflow(temporalService, aiservice)
-	temporalService.RegisterWorkers(userWorkflow)
+	temporalService.RegisterWorkers()
 
 	// account management
 	token := authToken.NewTokenService(cfg.Crypto)
@@ -63,14 +64,18 @@ func New(cfg *config.Config) *App {
 	OAuthRegistry := oauth.NewOauthRegistry(cfg.Oauth)
 	OAuthService := services.NewOauthService(OAuthRegistry, redis)
 	connectAuthAdapter := auth.NewHTTPAuthAdapater(authService)
-	userService := services.NewUserService(userRepo, userWorkflow)
+	userService := services.NewUserService(userRepo)
 	accountService := services.NewAccountService(OAuthService, authService, userService)
 
 	// business logic
+	projectService := services.NewProjectService(projectRepo, aiservice)
+	messageService := services.NewMessageService(messageRepo, projectRepo, projectService, aiservice)
 
 	// handlers
 	accountServiceHandler := handlers.NewAccountServiceHandler(accountService, connectAuthAdapter)
 	userServiceHandler := handlers.NewUserServiceHandler(userService, connectAuthAdapter)
+	projectServiceHandler := handlers.NewProjectServiceHandler(projectService, connectAuthAdapter)
+	messageServiceHandler := handlers.NewMessageServiceHandler(messageService, connectAuthAdapter)
 
 	// (middleware)
 	interceptor := connect.WithInterceptors(
@@ -82,6 +87,8 @@ func New(cfg *config.Config) *App {
 	services := []*vanguard.Service{
 		vanguard.NewService(apiv1connect.NewAccountServiceHandler(accountServiceHandler, interceptor)),
 		vanguard.NewService(apiv1connect.NewUserServiceHandler(userServiceHandler, interceptor)),
+		vanguard.NewService(apiv1connect.NewProjectServiceHandler(projectServiceHandler, interceptor)),
+		vanguard.NewService(apiv1connect.NewMessageServiceHandler(messageServiceHandler, interceptor)),
 	}
 
 	transcoder, err := vanguard.NewTranscoder(services)

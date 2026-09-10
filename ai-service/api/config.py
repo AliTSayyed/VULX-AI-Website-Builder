@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # e2b template id
     e2b_sandbox_nextjs_template_id: str = ""
 
+    # e2b sandbox lifetime, seconds. E2B's own default is 300 (5 minutes).
+    e2b_sandbox_timeout_seconds: int = 300
+
     # llm models
     openai_model: str = ""
     google_model: str = ""

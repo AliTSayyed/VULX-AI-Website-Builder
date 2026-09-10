@@ -8,7 +8,6 @@ from api.routes.models.sandbox_models import (
     WriteSandboxResponse,
 )
 from api.dependencies import sandbox_service_dependency
-from api.config import settings
 from services.models.sandbox_models import TerminalInfo
 from e2b_code_interpreter import Sandbox, WriteInfo
 from typing import List
@@ -32,11 +31,9 @@ async def create_sandbox(
 ) -> CreateSandboxResponse:
     logger.info("sandbox_creation_started")
     try:
-        sbx: Sandbox = sandbox_service.create(
-            template_id=settings.e2b_sandbox_nextjs_template_id
-        )  # currently only creating a nextjs sandbox
+        sbx: Sandbox = sandbox_service.create()  # currently only creating a nextjs sandbox
         logger.info("sandbox_creation_completed")
-        return CreateSandboxResponse(id=sbx.sandbox_id, url=sbx.get_host(3000))
+        return CreateSandboxResponse(id=sbx.sandbox_id, url=f"https://{sbx.get_host(3000)}")
     except Exception as e:
         logger.error(
             "sandbox_creation_failed",

@@ -193,6 +193,15 @@
   }
 }
 
+/* The generation flow's one motion: shimmer means "the model is working".
+ * TextShimmer supplies the gradient and the 200% background size; this only
+ * moves it. Without this rule the component renders static, silently. */
+@keyframes shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
 @layer components {
   .vx-rise {
     animation: vx-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;

@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "api/v1/enums.proto";
+import "google/api/annotations.proto";
+
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/projects"
+    };
+  }
+
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
+    option (google.api.http) = {
+      get : "/api/v1/projects/{id}"
+    };
+  }
+
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/projects"
+      body : "*"
+    };
+  }
+}
+
+message Project {
+  string id = 1;
+  string title = 2;
+  AiProvider provider = 3;
+  string sandbox_id = 4;
+  string preview_url = 5;
+  string created_at = 6; // RFC3339
+  string updated_at = 7; // RFC3339
+}
+
+message ListProjectsRequest {
+  int64 limit = 1;
+  string token = 2;
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  string token = 2;
+  bool has_more = 3;
+}
+
+message GetProjectRequest { string id = 1; }
+
+message GetProjectResponse { Project project = 1; }
+
+message CreateProjectRequest {
+  string first_prompt = 1;
+  AiProvider provider = 2;
+}
+
+message CreateProjectResponse { Project project = 1; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, ArrowUp, Hammer, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   PromptInput,
@@ -9,32 +9,62 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PROMPT_BOX } from "@/components/prompt/prompt-styles";
 import { cn } from "@/lib/utils";
+import { AiProvider, ChatMode, MessageRole } from "@/gen/api/v1/enums_pb";
 import {
-  PROVIDERS,
-  type ChatMode,
-  type Conversation,
-  type Provider,
-} from "./mock";
+  TypingText,
+  TypingTextCursor,
+} from "@/components/animate-ui/primitives/texts/typing";
+import { ComposerControls } from "./composer-controls";
+import { GeneratingLine } from "./generating";
+import { providerOrDefault } from "./providers";
+import { useMessages } from "@/hooks/useMessages";
 
 type ChatPanelProps = {
-  conversation: Conversation;
+  /** null while the Workspace is on a draft — no project exists yet. */
+  projectId: string | null;
+  title: string;
   onBack: () => void;
+  onSend: (input: { body: string; mode: ChatMode; provider: AiProvider }) => void;
+  generating: boolean;
+  /** Seeds the provider select from the open project. */
+  defaultProvider?: AiProvider;
+  /** True only while this project's title might still be generating. */
+  titlePending?: boolean;
 };
 
-export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
+export function ChatPanel({
+  projectId,
+  title,
+  onBack,
+  onSend,
+  generating,
+  defaultProvider,
+  titlePending,
+}: ChatPanelProps) {
   const [value, setValue] = useState("");
-  const [provider, setProvider] = useState<Provider>("anthropic");
-  const [mode, setMode] = useState<ChatMode>("build");
+  // Snapshot the title as of this panel's mount (it's remounted per project via
+  // its key) — comparing against this is what lets the real title reveal itself
+  // the moment it lands, without waiting out the full poll window.
+  const [initialTitle] = useState(title);
+  const [provider, setProvider] = useState<AiProvider>(
+    providerOrDefault(defaultProvider),
+  );
+  const [mode, setMode] = useState<ChatMode>(ChatMode.BUILD);
+  const { data: messages = [], isPending } = useMessages(projectId);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [messages.length, generating]);
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (!trimmed || generating) return;
+    onSend({ body: trimmed, mode, provider });
+    setValue("");
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -49,20 +79,32 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
           <ArrowLeft className="size-3.5" />
         </Button>
         <span className="text-foreground truncate text-sm font-medium">
-          {conversation.title}
+          {titlePending && title === initialTitle ? (
+            <span key="generating" className="vx-fade">
+              <TypingText text="Generating title…" duration={40}>
+                <TypingTextCursor
+                  style={{ height: "1em", transform: "translateY(0.15em)" }}
+                />
+              </TypingText>
+            </span>
+          ) : (
+            <span key="title" className="vx-fade">
+              {title}
+            </span>
+          )}
         </span>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-4 p-3">
-          {conversation.messages.length === 0 && (
+          {messages.length === 0 && !isPending && !generating && (
             <p className="text-muted-foreground px-1 py-8 text-center text-xs">
               No messages yet.
             </p>
           )}
 
-          {conversation.messages.map((m) =>
-            m.role === "user" ? (
+          {messages.map((m) =>
+            m.role === MessageRole.USER ? (
               <div key={m.id} className="flex justify-end">
                 <p className="bg-surface-2 text-foreground max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed">
                   {m.body}
@@ -71,12 +113,12 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
             ) : (
               <div key={m.id} className="flex flex-col gap-1.5">
                 <span className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px]">
-                  {m.mode === "build" ? (
+                  {m.mode === ChatMode.BUILD ? (
                     <Hammer className="size-3 text-accent-blue" />
                   ) : (
                     <MessageSquare className="size-3 text-accent-blue" />
                   )}
-                  {m.mode === "build" ? "Build" : "Chat"}
+                  {m.mode === ChatMode.BUILD ? "Build" : "Chat"}
                 </span>
                 <p className="text-foreground-dim px-1 text-[13px] leading-relaxed">
                   {m.body}
@@ -84,6 +126,18 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
               </div>
             ),
           )}
+
+          {generating && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-muted-foreground flex items-center gap-1.5 px-1 text-[11px]">
+                <Hammer className="text-accent-blue size-3" />
+                Build
+              </span>
+              <GeneratingLine className="px-1" />
+            </div>
+          )}
+
+          <div ref={bottomRef} />
         </div>
       </ScrollArea>
 
@@ -91,12 +145,15 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
         <PromptInput
           value={value}
           onValueChange={setValue}
-          onSubmit={() => setValue("")}
+          onSubmit={submit}
+          disabled={generating}
           className={cn(PROMPT_BOX, "border-accent-blue")}
         >
           <PromptInputTextarea
             placeholder={
-              mode === "build" ? "Describe a change..." : "Ask a question..."
+              mode === ChatMode.BUILD
+                ? "Describe a change..."
+                : "Ask a question..."
             }
             className="text-foreground placeholder:text-muted-foreground min-h-16 bg-transparent text-[13px] leading-5 dark:bg-transparent"
           />
@@ -107,60 +164,19 @@ export function ChatPanel({ conversation, onBack }: ChatPanelProps) {
              * spends credits, Chat does neither — so it gets a segmented toggle
              * rather than hiding inside a dropdown. See logged_in_design.md §3.
              */}
-            <div className="flex min-w-0 items-center gap-3">
-              <ToggleGroup
-                type="single"
-                value={mode}
-                onValueChange={(v) => v && setMode(v as ChatMode)}
-                className="border-hairline bg-surface-2 h-8 gap-0 rounded-full border p-1"
-              >
-                <ToggleGroupItem
-                  value="chat"
-                  aria-label="Chat mode"
-                  className="group text-foreground-dim data-[state=on]:text-foreground-dim h-full gap-1 rounded-full bg-transparent px-2.5 text-[11px] shadow-none focus-visible:shadow-none focus-visible:ring-0 data-[state=on]:bg-transparent data-[state=on]:shadow-none"
-                >
-                  <MessageSquare className="size-3 group-data-[state=on]:text-accent-blue" />
-                  Chat
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="build"
-                  aria-label="Build mode"
-                  className="group text-foreground-dim data-[state=on]:text-foreground-dim h-full gap-1 rounded-full bg-transparent px-2.5 text-[11px] shadow-none focus-visible:shadow-none focus-visible:ring-0 data-[state=on]:bg-transparent data-[state=on]:shadow-none"
-                >
-                  <Hammer className="size-3 group-data-[state=on]:text-accent-blue" />
-                  Build
-                </ToggleGroupItem>
-              </ToggleGroup>
-
-              <Select
-                value={provider}
-                onValueChange={(v) => setProvider(v as Provider)}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="border-hairline bg-surface-2 dark:bg-surface-2 dark:hover:bg-surface-2 h-8 gap-1 rounded-full px-2.5 text-[11px] shadow-none"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDERS.map((p) => (
-                    <SelectItem
-                      key={p.value}
-                      value={p.value}
-                      className="text-xs"
-                    >
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <ComposerControls
+              mode={mode}
+              onModeChange={setMode}
+              provider={provider}
+              onProviderChange={setProvider}
+              disabled={generating}
+            />
 
             <Button
               size="icon"
               className="size-8 shrink-0 rounded-full"
-              disabled={!value.trim()}
-              onClick={() => setValue("")}
+              disabled={generating || !value.trim()}
+              onClick={submit}
               aria-label="Send message"
             >
               <ArrowUp className="size-3.5" />

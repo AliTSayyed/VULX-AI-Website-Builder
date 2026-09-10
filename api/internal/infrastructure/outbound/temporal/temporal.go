@@ -34,25 +34,27 @@ func New(cfg config.Temporal) *Temporal {
 	}
 }
 
-func (temporal *Temporal) RegisterWorkers(userWorkflowInstance *UserWorkflow) *Temporal {
-	userWorker := worker.New(temporal.Client, "user-workflow", worker.Options{})
-	userWorker.RegisterWorkflow(userWorkflowInstance.UserWorkflowSteps)
-	userWorker.RegisterActivity(userWorkflowInstance.CreateSandbox)
-	userWorker.RegisterActivity(userWorkflowInstance.UseLlm)
-
-	utils.Logger.Info("Workers successfully registered")
-
-	go func() {
-		err := userWorker.Run(worker.InterruptCh())
-		if err != nil {
-			utils.Logger.Error("failed to run user worker", "error", err)
-		}
-	}()
-
-	temporal.UserWorker = userWorker
+func (temporal *Temporal) RegisterWorkers() *Temporal {
+	// No real workflow registered yet. To register one, build a worker.Worker and store
+	// it on Temporal.UserWorker, then return temporal. See NewUserWorkflow in
+	// user_workflow.go for the workflow/activity shape this would register:
+	//
+	//   userWorker := worker.New(temporal.Client, "user-workflow", worker.Options{})
+	//   userWorker.RegisterWorkflow(userWorkflowInstance.UserWorkflowSteps)
+	//   userWorker.RegisterActivity(userWorkflowInstance.CreateSandbox)
+	//   userWorker.RegisterActivity(userWorkflowInstance.UseLlm)
+	//   go func() {
+	//       err := userWorker.Run(worker.InterruptCh())
+	//       if err != nil {
+	//           utils.Logger.Error("failed to run user worker", "error", err)
+	//       }
+	//   }()
+	//   temporal.UserWorker = userWorker
 	return temporal
 }
 
 func (temporal *Temporal) StopWorkers() {
-	temporal.UserWorker.Stop()
+	// No real worker running yet — RegisterWorkers doesn't create one. When it does,
+	// stop it here:
+	//   temporal.UserWorker.Stop()
 }
