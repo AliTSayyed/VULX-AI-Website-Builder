@@ -28,6 +28,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import type { Profile } from "@/gen/api/v1/account_service_pb";
+import type { AiProvider, ChatMode } from "@/gen/api/v1/enums_pb";
 import { useAccountService } from "@/hooks/services/useAccountService";
 import { SilkBackground } from "@/components/landing/silk-background";
 import { ChatPanel } from "./chat-panel";
@@ -79,16 +80,19 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
   /* Submitting on Home is the one flow worth demonstrating: it drops you into
    * the Workspace with your prompt as the first message and no sandbox yet —
    * which is the state the preview pane has to handle and currently cannot. */
-  const start = (prompt: string) => {
+  const start = (input: { prompt: string; mode: ChatMode; provider: AiProvider }) => {
     const id = `draft-${Date.now()}`;
     setConversations((prev) => [
       {
         id,
-        title: prompt.length > 48 ? `${prompt.slice(0, 48)}…` : prompt,
+        title:
+          input.prompt.length > 48
+            ? `${input.prompt.slice(0, 48)}…`
+            : input.prompt,
         updatedAt: "Just now",
         previewUrl: null,
         messages: [
-          { id: `${id}-m1`, role: "user", mode: "build", body: prompt },
+          { id: `${id}-m1`, role: "user", mode: "build", body: input.prompt },
         ],
       },
       ...prev,
