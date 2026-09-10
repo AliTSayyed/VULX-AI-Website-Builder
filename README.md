@@ -2,7 +2,7 @@
 
 A SaaS that turns natural language into working frontend code, with a live preview running in a sandboxed environment — similar to Bolt or Lovable.
 
-![Welcome screen](./.planning/refs/Welcome-Screen.png)
+![Demo](./.planning/refs/vulx-demo-trim.gif)
 
 ## Tech Stack
 
