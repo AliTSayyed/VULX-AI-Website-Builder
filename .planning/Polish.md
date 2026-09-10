@@ -4,8 +4,8 @@
 > `ai-service-client`, `sandbox-service` §4, `messages-proto`, `messages-model` §9 (synchronous
 > Build) are all built, verified, and merged. This file replaces `MVP.md` as the index of what's
 > left for a real product — each item names the doc that owns the real design work, if one exists.
-> Frontend RPC wiring (the shell already exists over fixtures) is not "polish" — it's the next
-> base-work task, tracked in `ARCHITECTURE.md` §9/§10, not here.
+> Frontend RPC wiring landed as `responsive-logged-in-screen.md` — tracked in `ARCHITECTURE.md`
+> §9/§10, not here.
 
 ## Backend
 
@@ -77,8 +77,8 @@ background lifecycle management.
 
 ## Frontend
 
-`logged_in_design.md` open questions, beyond wiring the now-real RPCs to the existing fixture-backed
-shell: whether a sandbox spins up on opening a project or waits for the first Build message; the
+`logged_in_design.md` open questions, now that `responsive-logged-in-screen.md` has wired the RPCs to
+the screen: whether a sandbox spins up on opening a project or waits for the first Build message; the
 poll-vs-stream decision above driving how the thread UI shows a pending reply; a file tree tab (needs
 `project-codebase-model.md` first); whether the chat/preview split becomes a draggable
 `ResizablePanelGroup` instead of the fixed split it is today.

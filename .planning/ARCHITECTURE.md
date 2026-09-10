@@ -19,12 +19,11 @@ Lovable. A user describes what they want, an LLM agent writes the code into a li
 running Next.js, and the user sees both the generated files and a working preview URL. Three model
 providers are selectable (OpenAI, Google Gemini, Anthropic Claude). Usage is metered in credits.
 
-**Where the product actually is:** the backend demo path is done and verified end to end —
+**Where the product actually is:** the demo path is done and verified end to end, frontend included —
 authenticate → create a project → send a Build message → a sandbox is created (or reused) → the
 agent writes code into it → the preview URL renders the result. See
-[§10 Implementation status](#10-implementation-status) for what's still missing (mainly the
-frontend wiring — the RPCs this needs all exist and work, but `LoggedInScreen` still runs on local
-fixtures, not these RPCs).
+[§10 Implementation status](#10-implementation-status) for what's left, which is Polish-tier work
+(async Build, codebase persistence, Chat mode, payments, tests), not base wiring.
 
 ## 2. Repository map
 
@@ -494,13 +493,13 @@ single source of truth. The transcoder is mounted at `/`; `/healthz` and `/docs/
 
 Two interceptors wrap every RPC, in this order: request logging, then auth.
 
-## 9. Frontend 🟡
+## 9. Frontend ✅ (Build path) / 🟡 (Chat, streaming, mobile — out of scope)
 
-The auth surface is ✅ **built** end to end. Past sign-in, `LoggedInScreen` now ships a full **static
-UI shell** for the product — two screens, Home and Workspace — but it runs entirely over local
-fixtures (`components/session/mock.ts`) with no backend wiring: no RPC exists yet for conversations,
-messages, or sandbox persistence. See `.planning/Frontend/logged_in_design.md` for the screen-by-screen
-design and the RPCs each piece implies; this section only tracks what is real versus fixture-backed.
+The auth surface is ✅ **built** end to end. Past sign-in, `LoggedInScreen` is wired to the real
+backend — `ListProjects`, `GetProject`, `CreateProject`, `ListMessages`, `SendMessage` all run
+against the live API. `components/session/mock.ts` and `conversation-list.tsx` are gone. See
+`.planning/Frontend/logged_in_design.md` for the screen-by-screen structure (still accurate) and
+`.planning/tasks/Frontend/responsive-logged-in-screen/` for how the wiring landed.
 
 **Auth is real, not scaffolding.** `src/hooks/services/useServiceClient.ts` builds a memoised
 Connect transport from `NEXT_PUBLIC_API_URL` (falling back to `https://local.api.vulx.ai`), sends
@@ -526,25 +525,41 @@ just an installed-but-unused dependency.
 `src/components/ui/` is a full shadcn install — treat it as vendored, restyle at the call site only.
 `src/components/session/` holds all post-login UI, distinct from `src/components/landing/`.
 
-**`LoggedInScreen` (`logged-in-screen.tsx`) is one `SidebarProvider` shell over two states**,
-switched on whether a conversation is open (`openId` in local state — not a route):
+**`LoggedInScreen` (`logged-in-screen.tsx`) is one `SidebarProvider` shell over a three-state `View`
+union** — `{ kind: "home" }`, `{ kind: "draft" }` (Workspace open, no project created yet), or
+`{ kind: "project"; id }` — collapsed for layout purposes into `isWorkspace = view.kind !== "home"`:
 
-- **Home** (no conversation open): the sidebar renders `ConversationList` (the fixture
-  `CONVERSATIONS`, each row a title + relative time + a plain accent-coloured dot — no per-row
-  icon), and the inset renders `HomeView` (the two-tier "Welcome back" headline + a prompt box
-  identical to the logged-out hero's). Its "New build" button creates a blank local conversation
-  (no messages) and opens it directly into Workspace — there is no separate "new build" screen.
-- **Workspace** (a conversation open): the *same* sidebar panel becomes that conversation's chat
-  thread (`ChatPanel` — a Chat/Build mode `ToggleGroup`, a provider `Select`, and a message list
-  reusing `PROMPT_BOX`/`PROMPT_TEXTAREA` for the composer), and the inset becomes `PreviewPane`
-  (an iframe placeholder that reads `previewUrl` off the fixture — "No sandbox running" when null).
-  `Sidebar`'s `collapsible` prop is `"offcanvas"` in **both** states on purpose: only the
+- **Home** (`view.kind === "home"`): the sidebar renders `ProjectList` over `useProjects()` (real
+  `Project` rows, `formatRelative` timestamps, an active-row highlight, no client-side sort — the
+  backend already returns `updated_at DESC`), and the inset renders `HomeView` (the two-tier
+  "Welcome back" headline + a prompt box carrying the same mode/provider `ComposerControls` as the
+  Workspace composer, since the provider has to be chosen before `CreateProject` runs). Its
+  "New build" button sets the view to `draft` — no project exists until the first send.
+- **Workspace** (`draft` or `project`): the *same* sidebar panel becomes the project's chat thread
+  (`ChatPanel`, keyed on `projectId ?? "draft"` so switching projects resets the composer draft and
+  re-seeds the provider select), reading `useMessages(projectId)` for the thread (`enabled:
+  !!projectId`, so a draft simply renders an empty thread) — and the inset becomes `PreviewPane`, a
+  real `<iframe>` once `project.previewUrl` is non-empty, with an opaque `bg-surface` overlay and a
+  cycling `GeneratingLine` shimmer ("Thinking…" / "Building…" / "Creating…") while a send is in
+  flight. `Sidebar`'s `collapsible` prop is `"offcanvas"` in **both** states on purpose: only the
   `--sidebar-width` CSS variable changes (16rem → 26rem) between them, and that variable is what
   animates as a slide. Letting `collapsible` itself differ between Home and Workspace would put the
   two states on different internal render branches of the vendored `Sidebar`, forcing a full
   unmount/remount instead of a transition — this was tried and reverted. Home deliberately renders no
   `SidebarTrigger`/`SidebarRail`, so nothing on that screen can collapse it even though the mechanism
   underneath supports collapsing.
+- **`LoggedInScreen.start()` is the one create-then-send flow**, shared by Home's submit, the
+  Workspace composer's `onSend`, and a draft's first message: if no project id exists yet, it awaits
+  `useCreateProject().mutateAsync({firstPrompt, provider})`, switches the view to the new id
+  immediately — not when the build finishes, so the sidebar row and a real thread appear right away
+  — then awaits `useSendMessage().mutateAsync(...)` against that id. `generating`
+  (`createProject.isPending || sendMessage.isPending`) is the single boolean both `ChatPanel` and
+  `PreviewPane` read, so the thread shimmer and the preview overlay can never disagree. A thrown
+  error anywhere in the sequence surfaces as a toast; no other error UI is in scope.
+- **The preview URL arrives through cache invalidation, not the response.** `SendMessageResponse`
+  carries only the user/assistant messages, not the sandbox — `useSendMessage`'s `onSettled`
+  invalidates `["messages", id]`, `["project", id]` and `["projects"]` together, and it is the
+  `["project", id]` invalidation specifically that makes `previewUrl` show up once a sandbox exists.
 - Logging out goes through a confirm `AlertDialog` ("Log out?") before `AccountLogout` fires — sized
   to match the auth dialog's `sm:max-w-sm` for visual consistency between the app's two modals.
 
@@ -554,16 +569,16 @@ switched on whether a conversation is open (`openId` in local state — not a ro
 
 A single non-system accent colour, `--accent-blue` (`#569CD6`), was added on top of the otherwise
 near-monochrome palette to mark selected/active state (the mode toggle's active icon, the composer
-border, the conversation-list dot, the logged-out "Log in" outline). See
+border, the project-list dot, the generating row's Build icon, the logged-out "Log in" outline). See
 `.planning/Frontend/design-system.md` §1 and §3 for the token and the reasoning — this file only
 notes that it exists and is intentional, not accidental drift from the one-hue rule.
 
-**What is still not built is the wiring, not the RPCs.** `ListProjects`, `CreateProject`,
-`GetProject`, `ListMessages`, `SendMessage` all exist and work against the backend (§10) — see
-`logged_in_design.md` §5 for the fixture-to-RPC mapping this screen still needs. `ChatMode`'s Chat
-toggle should stay disabled once wired, since Chat mode is Polish (the backend returns
-`Unimplemented` for it) — Build is the mode that works. Credits are read (`Profile.credits`, a
-`bigint`) but never displayed or spent, deliberately — the feature doesn't exist yet.
+**What is out of scope, deliberately, not missing by oversight:** Chat mode stays selectable but
+returns `Unimplemented` from the backend (`ChatMode`'s toggle is intentionally not gated —
+`Polish.md`); there is no routing, so a refresh returns to Home and the open project is lost; no
+pagination on the project list or the message thread; no draggable chat/preview split; no mobile
+layout. Credits are read (`Profile.credits`, a `bigint`) but never displayed prominently or spent —
+the feature doesn't exist yet.
 
 Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 
@@ -582,7 +597,7 @@ Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 | Messages: schema, synchronous Build flow | ✅ | `ListMessages`/`SendMessage`; Chat mode returns `Unimplemented` — `Polish.md` |
 | Temporal workflows | 🟡 | connection + a worker with nothing registered on it; the demo workflow is kept as an unwired reference file only — §11 |
 | Frontend auth surface (login, session gate, logout) | ✅ | end to end |
-| Frontend beyond auth (dashboard, editor, preview) | 🟡 | static Home/Workspace UI shell over fixtures — §9; RPCs exist, not yet wired |
+| Frontend beyond auth (dashboard, editor, preview) | ✅ | wired to the real backend — §9; synchronous Build path only, no Chat/streaming/pagination/routing/mobile |
 | Credits: schema and display | 🟡 | granted (10 by default) and read; never spent |
 | Sandbox persistence / reuse | ✅ | `sandbox_id`/`preview_url` stored on `Project`, reused across messages in the same project |
 | Sandbox keep-alive / dead-sandbox recovery | ⛔ | a dead sandbox and a real outage both surface as a plain 500 — `Polish.md` |

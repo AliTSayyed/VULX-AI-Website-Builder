@@ -15,7 +15,8 @@ Reference: `.planning/refs/silk-chat-hero-preview.jsx`.
    selected/active state as a colour cue layered on top of rule 2's contrast cue, rather than
    replacing it: the composer border (`chat-panel.tsx`, `home-view.tsx`, `hero-prompt.tsx`), the
    active icon in the Chat/Build mode toggle, the "Build"/"Chat" message-row icon, the
-   conversation-list row dot, and the logged-out top bar's "Log in" outline. See §3.
+   generating row's Build icon (`generating.tsx`), the project-list row dot, and the logged-out top
+   bar's "Log in" outline. See §3.
 2. **Emphasis is contrast, not colour.** The primary button is near-white on dark.
 3. **No translucent surfaces, no alpha on text.** Over an animated background alpha makes contrast a
    *moving target* — see §3. Every colour that carries or backs text is solid.
@@ -65,7 +66,7 @@ future recolour; picking by eye cost ~5 L\* on the first attempt, straight out o
 
 | Token | Utility | Dark value | Use |
 | --- | --- | --- | --- |
-| `--surface` | `bg-surface` | `oklch(0.18 0.009 245)` | Panel and chip fill |
+| `--surface` | `bg-surface` | `oklch(0.18 0.009 245)` | Panel and chip fill; the preview pane's generating overlay |
 | `--surface-2` | `bg-surface-2` | `oklch(0.24 0.01 245)` | Hover fill; logo tile; inset chrome |
 | `--hairline` | `border-hairline` | `oklch(0.42 0.01 245)` | Every panel edge |
 | `--hairline-strong` | `border-hairline-strong` | `oklch(0.52 0.012 245)` | Hover edge |
@@ -156,16 +157,9 @@ reader. The silk is what makes glass unaffordable here.
 
 ## 8. Open items
 
-- **`TextShimmer` / `ThinkingBar` are silently broken.** `text-shimmer.tsx` applies
-  `animate-[shimmer_4s_infinite_linear]` but there is no `@keyframes shimmer` in `globals.css`, and
-  Tailwind v4 does not generate one for an arbitrary animation name. They render static, with no
-  error. Add before building the generation flow:
-
-  ```css
-  @keyframes shimmer { to { background-position: 200% center; } }
-  ```
-
-  Both stay **reserved for the generation flow** — shimmer means "the model is working".
-  `ThinkingBar` also ships `onStop` / `stopLabel`, which assume a cancellable stream.
-- The logged-in screen is built as a **static shell over fixtures** (`logged_in_design.md`) — no
-  network call but the pre-existing logout.
+- **`TextShimmer`'s keyframe now exists.** `@keyframes shimmer` was added to `globals.css` next to
+  `vx-rise`/`vx-fade`, so the component sweeps correctly. It is in use in the generation flow via
+  `GeneratingLine` (`components/session/generating.tsx`), shared by the chat thread and the preview
+  overlay — shimmer stays reserved for exactly that, meaning "the model is working." `ThinkingBar`
+  stays unused: it ships `onStop`/`stopLabel`, which assume a cancellable stream, and `SendMessage`
+  is one blocking RPC with no abort path.
