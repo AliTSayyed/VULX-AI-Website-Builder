@@ -30,16 +30,22 @@ import {
 import type { Profile } from "@/gen/api/v1/account_service_pb";
 import type { AiProvider, ChatMode } from "@/gen/api/v1/enums_pb";
 import { useAccountService } from "@/hooks/services/useAccountService";
+import { useCreateProject, useProject, useProjects } from "@/hooks/useProjects";
+import { useSendMessage } from "@/hooks/useMessages";
 import { SilkBackground } from "@/components/landing/silk-background";
 import { ChatPanel } from "./chat-panel";
-import { ConversationList } from "./conversation-list";
 import { HomeView } from "./home-view";
 import { PreviewPane } from "./preview-pane";
-import { CONVERSATIONS, type Conversation } from "./mock";
+import { ProjectList } from "./project-list";
 
 type LoggedInScreenProps = {
   profile: Profile;
 };
+
+type View =
+  | { kind: "home" }
+  | { kind: "draft" } // Workspace open, no project created yet
+  | { kind: "project"; id: string };
 
 const TRIGGER =
   "text-foreground-dim hover:bg-surface-2 hover:text-foreground dark:hover:bg-surface-2 size-7 shrink-0 rounded-full";
@@ -47,13 +53,11 @@ const TRIGGER =
 /*
  * Two screens behind one shell — see .planning/Frontend/logged_in_design.md.
  *
- * Home (no conversation open): the sidebar lists conversations, the inset holds
- * the welcome hero and the prompt box.
- * Workspace (a conversation open): the same sidebar panel becomes that
- * conversation's chat thread, and the inset becomes the sandbox preview.
- *
- * Everything below is local state over static fixtures. No network call is made
- * except the logout that already existed.
+ * Home (no project open): the sidebar lists projects, the inset holds the
+ * welcome hero and the prompt box.
+ * Workspace (draft or an open project): the same sidebar panel becomes the
+ * chat thread, and the inset becomes the sandbox preview. A draft is a
+ * project with no id, no messages and no preview yet — not a fourth screen.
  *
  * Both panels float on the silk as opaque rounded surfaces, which is the same
  * language as the landing page's prompt box — one hairline per element, no
@@ -62,60 +66,71 @@ const TRIGGER =
 export function LoggedInScreen({ profile }: LoggedInScreenProps) {
   const account = useAccountService();
   const queryClient = useQueryClient();
-  const [conversations, setConversations] =
-    useState<Conversation[]>(CONVERSATIONS);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [view, setView] = useState<View>({ kind: "home" });
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  /* Opening a conversation must expand the rail. Going straight from a collapsed
+  const isWorkspace = view.kind !== "home";
+  const projectId = view.kind === "project" ? view.id : null;
+
+  const { data: projects = [], isPending: projectsLoading } = useProjects();
+  const { data: project } = useProject(projectId);
+  const createProject = useCreateProject();
+  const sendMessage = useSendMessage();
+
+  // One boolean feeding both ChatPanel and PreviewPane, so the thread
+  // shimmer and the preview overlay can never disagree.
+  const generating = createProject.isPending || sendMessage.isPending;
+
+  /* Opening a project must expand the rail. Going straight from a collapsed
    * icon rail to a chat thread would switch collapsible icon -> offcanvas on the
    * same frame as the content swap, which reads as a glitch rather than a move. */
-  const openConversation = (id: string) => {
-    setOpenId(id);
+  const open = (id: string) => {
+    setView({ kind: "project", id });
     setSidebarOpen(true);
   };
 
-  const conversation = conversations.find((c) => c.id === openId) ?? null;
+  /* One handler for three entry points: Home's submit, the Workspace
+   * composer's onSend, and the first send out of a draft. They differ only
+   * in whether a project id already exists. */
+  const start = async (input: {
+    prompt: string;
+    mode: ChatMode;
+    provider: AiProvider;
+  }) => {
+    try {
+      let id = view.kind === "project" ? view.id : null;
 
-  /* Submitting on Home is the one flow worth demonstrating: it drops you into
-   * the Workspace with your prompt as the first message and no sandbox yet —
-   * which is the state the preview pane has to handle and currently cannot. */
-  const start = (input: { prompt: string; mode: ChatMode; provider: AiProvider }) => {
-    const id = `draft-${Date.now()}`;
-    setConversations((prev) => [
-      {
-        id,
-        title:
-          input.prompt.length > 48
-            ? `${input.prompt.slice(0, 48)}…`
-            : input.prompt,
-        updatedAt: "Just now",
-        previewUrl: null,
-        messages: [
-          { id: `${id}-m1`, role: "user", mode: "build", body: input.prompt },
-        ],
-      },
-      ...prev,
-    ]);
-    openConversation(id);
+      if (!id) {
+        const created = await createProject.mutateAsync({
+          firstPrompt: input.prompt,
+          provider: input.provider,
+        });
+        id = created.id;
+        // Switch views the moment the project exists, not when the build
+        // ends: the sidebar row and the real thread appear immediately, and
+        // the send below runs against a Workspace that is already on screen.
+        setView({ kind: "project", id });
+        setSidebarOpen(true);
+      }
+
+      await sendMessage.mutateAsync({
+        projectId: id,
+        body: input.prompt,
+        mode: input.mode,
+        provider: input.provider,
+      });
+    } catch {
+      toast.error("Could not build that. Please try again.");
+    }
   };
 
   /* The sidebar's "New build" button skips the Home prompt entirely and drops
    * straight into a blank Workspace — ChatPanel already renders "No messages
-   * yet." for an empty thread, so there is nothing else to special-case. */
+   * yet." for an empty thread, so there is nothing else to special-case. The
+   * row itself appears once CreateProject resolves. */
   const newBuild = () => {
-    const id = `draft-${Date.now()}`;
-    setConversations((prev) => [
-      {
-        id,
-        title: "New build",
-        updatedAt: "Just now",
-        previewUrl: null,
-        messages: [],
-      },
-      ...prev,
-    ]);
-    openConversation(id);
+    setView({ kind: "draft" });
+    setSidebarOpen(true);
   };
 
   // Google does not always return a given name; never render a blank line.
@@ -149,7 +164,7 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
         // which needs materially more room.
         style={
           {
-            "--sidebar-width": conversation ? "26rem" : "16rem",
+            "--sidebar-width": isWorkspace ? "26rem" : "16rem",
           } as React.CSSProperties
         }
       >
@@ -181,23 +196,29 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
             </div>
           </SidebarHeader>
 
-          <SidebarContent className={conversation ? "overflow-hidden" : undefined}>
+          <SidebarContent className={isWorkspace ? "overflow-hidden" : undefined}>
             <div
-              key={conversation ? "chat" : "list"}
+              key={isWorkspace ? "chat" : "list"}
               className="vx-fade flex min-h-0 flex-1 flex-col"
             >
-              {conversation ? (
+              {isWorkspace ? (
                 <ChatPanel
-                  projectId={conversation.id}
-                  title={conversation.title}
-                  onBack={() => setOpenId(null)}
-                  onSend={() => {}}
-                  generating={false}
+                  key={projectId ?? "draft"}
+                  projectId={projectId}
+                  title={project?.title ?? "New build"}
+                  onBack={() => setView({ kind: "home" })}
+                  onSend={(m) =>
+                    start({ prompt: m.body, mode: m.mode, provider: m.provider })
+                  }
+                  generating={generating}
+                  defaultProvider={project?.provider}
                 />
               ) : (
-                <ConversationList
-                  conversations={conversations}
-                  onOpen={openConversation}
+                <ProjectList
+                  projects={projects}
+                  activeId={projectId}
+                  loading={projectsLoading}
+                  onOpen={open}
                   onNewBuild={newBuild}
                 />
               )}
@@ -254,21 +275,21 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
           {/* Edge target: the only way back once the workspace sidebar
               collapses fully offcanvas. Home's sidebar is not collapsible,
               so the rail has nothing to do there. */}
-          {conversation && <SidebarRail />}
+          {isWorkspace && <SidebarRail />}
         </Sidebar>
 
         <SidebarInset className="relative flex min-h-svh flex-col bg-transparent">
-          {conversation ? (
+          {isWorkspace ? (
             <div key="preview" className="vx-fade min-h-0 flex-1 p-2">
               <PreviewPane
-                url={null}
-                generating={false}
+                url={project?.previewUrl || null}
+                generating={generating}
                 trigger={<SidebarTrigger className={TRIGGER} />}
               />
             </div>
           ) : (
             <div key="home" className="vx-fade flex flex-1 flex-col">
-              <HomeView name={name} onStart={start} />
+              <HomeView name={name} onStart={start} disabled={generating} />
             </div>
           )}
         </SidebarInset>
