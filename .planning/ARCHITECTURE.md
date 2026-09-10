@@ -136,7 +136,7 @@ api/
     │   ├── app.go                      ⭐ THE WIRING FILE — every dependency is built here
     │   └── services/                   USE CASES + the ports they depend on
     │       ├── user_service.go         + UserRepository port
-    │       ├── project_service.go      + ProjectRepository port ✅
+    │       ├── project_service.go      + ProjectRepository, ProjectTitler ports ✅
     │       ├── message_service.go      + MessageRepository, AIService ports — the Build flow ✅
     │       ├── auth_service.go         + AuthAdapter port
     │       ├── oauth_service.go        + OauthProvider, OauthProviderRegistry ports
@@ -156,8 +156,8 @@ api/
     │   │   ├── oauth/                  Google provider + a name→provider registry
     │   │   ├── temporal/               client, worker registration — currently a no-op; see below
     │   │   └── ai_service/             REST client for the Python service — CreateSandbox,
-    │   │                                 RunCodeAgent, shared `do` helper, 15-minute client
-    │   │                                 backstop ✅
+    │   │                                 RunCodeAgent, GenerateTitle, shared `do` helper,
+    │   │                                 15-minute client backstop ✅
     │   ├── persistence/postgres/       repositories (user, project, message), embedded migrations,
     │   │                                 cursor codec
     │   └── cache/redis.go              Cache port implementation
@@ -244,6 +244,25 @@ X_repository.go".** Inserting a message also has to bump `projects.updated_at` (
 reorders by recent activity) — done as a single data-modifying CTE so both writes are atomic with
 no transaction helper in this codebase. The `UPDATE projects` living inside
 `message_repository.go` is intentional, not a misplaced query.
+
+### 5.6 Project titles: generated asynchronously, always via OpenAI
+
+`ProjectService.Create` returns immediately with `provisionalTitle(firstPrompt)` — a fast, local
+whitespace-collapse-and-60-char-clamp — then spawns a detached goroutine (`generateTitleAsync`)
+that calls the new `ProjectTitler` port (`AIService.GenerateTitle`, `outbound/ai_service/llm.go`)
+and, on success, overwrites the title via `ProjectRepository.UpdateTitle`. This is a deliberate
+exception to the provider-selection pattern used everywhere else (`Project.provider` picks which
+`{provider}` path segment a Build hits): title generation always calls `POST /openai/query`,
+regardless of what provider the project itself uses — a cheap, one-off cosmetic call unrelated to
+the code-gen path. One real consequence of that: if `OPENAI_API_KEY` isn't configured, every
+project's title silently and permanently falls back to the provisional one, even for an
+Anthropic- or Google-only setup. `GenerateTitle`'s own 10s timeout (`generateTitleTimeout`,
+`ai_service.go`) sits inside a 15s outer bound (`asyncTitleTimeout`) covering the LLM call plus the
+follow-up DB write; any failure — timeout, AI-service outage, empty response — just leaves the
+provisional title in place, logged as a warning. `UpdateTitle` (mirrors `UpdateSandbox`'s shape)
+does **not** bump `updated_at`, consistent with that existing convention. Because this goroutine
+runs outside the request lifecycle, it recovers its own panics — an unrecovered one there would
+crash the whole process, not just fail one title.
 
 ## 6. Authentication ✅
 
@@ -560,6 +579,16 @@ union** — `{ kind: "home" }`, `{ kind: "draft" }` (Workspace open, no project 
   carries only the user/assistant messages, not the sandbox — `useSendMessage`'s `onSettled`
   invalidates `["messages", id]`, `["project", id]` and `["projects"]` together, and it is the
   `["project", id]` invalidation specifically that makes `previewUrl` show up once a sandbox exists.
+- **Project titles fill in a few seconds after creation**, and the frontend has to notice on its
+  own — this app runs with `refetchOnWindowFocus: false` (`providers.tsx`), so nothing refetches
+  spontaneously. `LoggedInScreen` tracks the id of a just-created project as `pendingTitleId` (set
+  only in `start()`'s create branch, cleared after an 18s window matching the backend's bound) and
+  passes a `pollForTitle` flag into `useProject`, which turns on a 2s `refetchInterval` only for
+  that one query — never for an already-open project. `ChatPanel` snapshots the title it first
+  received on mount, shows a typing "Generating title…" (`TypingText`/`TypingTextCursor`, the same
+  primitive the logged-out hero's prompt cycle uses) while the polled title still matches that
+  snapshot, and cross-fades (`vx-fade`) to the real title the instant it changes, rather than
+  waiting for the poll window to close.
 - Logging out goes through a confirm `AlertDialog` ("Log out?") before `AccountLogout` fires — sized
   to match the auth dialog's `sm:max-w-sm` for visual consistency between the app's two modals.
 
@@ -593,7 +622,7 @@ Path aliases: `@/*` → `src/*`, `@apiv1/*` → `src/gen/api/v1/*`.
 | Sandbox creation and agent file/command execution | ✅ | via the Python service directly, and via the Go API |
 | All three model providers | ✅ | query and code-agent paths |
 | Go API → AI service calls | ✅ | `CreateSandbox`, `RunCodeAgent`; 30s timeout ceiling removed — §11 |
-| Projects: schema, CRUD, ownership | ✅ | `ListProjects`/`GetProject`/`CreateProject`, keyset pagination on `updated_at` |
+| Projects: schema, CRUD, ownership | ✅ | `ListProjects`/`GetProject`/`CreateProject`, keyset pagination on `updated_at`; titles generated asynchronously via OpenAI — §5.6 |
 | Messages: schema, synchronous Build flow | ✅ | `ListMessages`/`SendMessage`; Chat mode returns `Unimplemented` — `Polish.md` |
 | Temporal workflows | 🟡 | connection + a worker with nothing registered on it; the demo workflow is kept as an unwired reference file only — §11 |
 | Frontend auth surface (login, session gate, logout) | ✅ | end to end |

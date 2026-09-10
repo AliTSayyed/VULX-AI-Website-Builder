@@ -39,10 +39,20 @@ providers mid-thread doesn't update what the Workspace restores as "current sele
 Fix is small — one `ProjectRepository.UpdateProvider` method (mirrors `UpdateSandbox`'s shape),
 called from `MessageService.Send`.
 
-**Project renaming & LLM titles** — `project-model.md`. No `RenameProject` RPC / `UpdateTitle` repo
-method. Titles are the first prompt, truncated — no LLM-generated title. `ProjectTitler` port was
-never declared; the idea on the table is a cheap/free model call (e.g. Gemini Flash) rather than
-burning a paid provider call on a cosmetic string.
+**Project renaming** — `project-model.md`. No `RenameProject` RPC — a generated title can't be
+edited afterward even though it's wrong sometimes.
+
+**LLM-generated project titles are a hack, not the originally-planned design.**
+`ProjectService.Create` now generates titles via a detached goroutine calling the new
+`ProjectTitler` port — `POST /openai/query`, hardcoded to OpenAI regardless of the project's own
+selected provider (`ARCHITECTURE.md` §5.6). This diverges from the idea on the table when this was
+still unbuilt (a dedicated free/cheap model, e.g. Gemini Flash, via its own route) in two ways
+worth revisiting: it reuses the general `/query` route and whatever `OPENAI_MODEL` happens to be
+configured to, rather than a purpose-built cheap model — so a deployment with no
+`OPENAI_API_KEY` silently and permanently falls back to the truncated-prompt title for every
+project — and the provider choice is hardcoded, not configurable. Any failure (timeout, outage,
+empty response) fails silently: the provisional title just stands forever, logged as a warning
+server-side, never surfaced to the user.
 
 **AI-service client completeness** — `ai-service-client.md`. `Query` (needed by Chat + titles),
 `WriteFiles`/`RunCommand` (needed by codebase replay) aren't implemented on the Go client. Revisit
@@ -82,6 +92,14 @@ the screen: whether a sandbox spins up on opening a project or waits for the fir
 poll-vs-stream decision above driving how the thread UI shows a pending reply; a file tree tab (needs
 `project-codebase-model.md` first); whether the chat/preview split becomes a draggable
 `ResizablePanelGroup` instead of the fixed split it is today.
+
+**The title-generation reveal is a bespoke, one-off polling mechanism, not a general pattern.**
+`useProject`'s `pollForTitle` option, `LoggedInScreen`'s `pendingTitleId`, and `ChatPanel`'s
+snapshot-and-cross-fade logic exist solely to notice an async title update in an app that
+otherwise never polls or refetches spontaneously (`refetchOnWindowFocus: false`). If a second
+async-backend-update-needs-frontend-polling need ever shows up (e.g. async Build's progress, above),
+this ad hoc per-feature approach won't scale — worth generalizing into a small reusable
+"poll until this field changes, bounded" hook rather than copying the pattern a second time.
 
 ## Known runtime trade-offs (accepted, not bugs)
 
