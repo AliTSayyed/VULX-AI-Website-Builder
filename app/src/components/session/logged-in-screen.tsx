@@ -261,7 +261,8 @@ export function LoggedInScreen({ profile }: LoggedInScreenProps) {
           {conversation ? (
             <div key="preview" className="vx-fade min-h-0 flex-1 p-2">
               <PreviewPane
-                url={conversation.previewUrl}
+                url={null}
+                generating={false}
                 trigger={<SidebarTrigger className={TRIGGER} />}
               />
             </div>
