@@ -134,3 +134,22 @@ func (p *ProjectRepository) UpdateSandbox(ctx context.Context, id uuid.UUID, san
 
 	return nil
 }
+
+func (p *ProjectRepository) UpdateTitle(ctx context.Context, id uuid.UUID, title string) error {
+	query := `UPDATE projects SET title = $2 WHERE id = $1`
+
+	result, err := p.db.ExecContext(ctx, query, id, title)
+	if err != nil {
+		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to update title for project %s, %w", id, err))
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return domain.NewError(domain.ErrorTypeInternal, fmt.Errorf("failed to check rows affected updating title for project %s, %w", id, err))
+	}
+	if rows == 0 {
+		return domain.NewError(domain.ErrorTypeNotFound, fmt.Errorf("project %s not found", id))
+	}
+
+	return nil
+}

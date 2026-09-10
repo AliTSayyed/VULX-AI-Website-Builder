@@ -17,6 +17,7 @@ import (
 
 const (
 	createSandboxTimeout = 90 * time.Second
+	generateTitleTimeout = 10 * time.Second
 	// RunCodeAgent deliberately has none — it inherits the caller's context.
 )
 

@@ -15,6 +15,14 @@ type codeAgentRequest struct {
 	Message string `json:"message"`
 }
 
+type queryRequest struct {
+	Message string `json:"message"`
+}
+
+type queryResponse struct {
+	Content string `json:"content"`
+}
+
 func (a *AIService) RunCodeAgent(
 	ctx context.Context, provider domain.AIProvider, sandboxID, message string,
 ) (*domain.CodeAgentResult, error) {
@@ -41,4 +49,26 @@ func (a *AIService) RunCodeAgent(
 		"files", len(out.Files), "commands", len(out.Commands))
 
 	return &out, nil
+}
+
+const titlePromptTemplate = "Summarize the following website-build request into a short, accurate " +
+	"project title of 3 to 7 words. No trailing punctuation, no quotation marks, no preamble — " +
+	"respond with only the title.\n\nRequest: %s"
+
+// GenerateTitle always hits OpenAI via /openai/query, independent of the project's chosen
+// provider — title generation is a cosmetic side task, not part of the code-gen path.
+// ProjectService.Create falls back to provisionalTitle on any error, so this is never
+// load-bearing for whether a project can be created.
+func (a *AIService) GenerateTitle(ctx context.Context, firstPrompt string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, generateTitleTimeout)
+	defer cancel()
+
+	message := fmt.Sprintf(titlePromptTemplate, firstPrompt)
+
+	var out queryResponse
+	if err := a.do(ctx, http.MethodPost, "/openai/query", queryRequest{Message: message}, &out); err != nil {
+		return "", domain.WrapError("ai service generate title", err)
+	}
+
+	return out.Content, nil
 }

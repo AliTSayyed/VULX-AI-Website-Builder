@@ -68,7 +68,7 @@ func New(cfg *config.Config) *App {
 	accountService := services.NewAccountService(OAuthService, authService, userService)
 
 	// business logic
-	projectService := services.NewProjectService(projectRepo)
+	projectService := services.NewProjectService(projectRepo, aiservice)
 	messageService := services.NewMessageService(messageRepo, projectRepo, projectService, aiservice)
 
 	// handlers
